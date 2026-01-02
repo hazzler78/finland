@@ -27,20 +27,15 @@
 
    **Production:**
    - `TELEGRAM_BOT_TOKEN` = Din bot token från BotFather
-     - Exempel: `8555429440:AAFyb4n6JLQFU_3NcPoW4E3PhVEHImdIG1g`
-   - `TELEGRAM_CHAT_ID` = Ditt chat ID (bara numret, t.ex. `6569007750`)
-     - För flera mottagare: separera med komma (t.ex. `6569007750,123456789,987654321`)
+     - Exempel: `YOUR_BOT_TOKEN:YOUR_BOT_SECRET`
+   - `TELEGRAM_CHAT_ID` = Ditt chat ID (bara numret, t.ex. `123456789`)
+     - För flera mottagare: separera med komma (t.ex. `123456789,987654321,111222333`)
 
 4. Klicka på **Save**
 
-## Steg 4: Konfigurera i Cloudflare Pages (Nuvarande värden)
+## Steg 4: Konfigurera i Cloudflare Pages
 
-**Testade värden:**
-- `TELEGRAM_BOT_TOKEN`: `8555429440:AAFyb4n6JLQFU_3NcPoW4E3PhVEHImdIG1g`
-- `TELEGRAM_CHAT_ID`: `6569007750`
-
-**För flera mottagare:** Lägg till fler chat IDs separerade med komma:
-- `TELEGRAM_CHAT_ID`: `6569007750,123456789,987654321`
+**Viktigt:** Använd dina egna värden från BotFather och ditt Chat ID. Dela aldrig dessa värden offentligt!
 
 ## Steg 5: Testa
 
