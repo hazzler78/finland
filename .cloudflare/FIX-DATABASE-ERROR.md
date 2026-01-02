@@ -23,6 +23,22 @@ Du bör se `contacts` i resultatet.
 
 ### Steg 3: Testa API:et
 
+**Windows PowerShell:**
+```powershell
+$body = @{
+    name = "Test"
+    email = "test@example.com"
+    subject = "Test"
+    message = "Test message"
+} | ConvertTo-Json
+
+Invoke-WebRequest -Uri "https://sahkopomo.pages.dev/api/contacts" `
+    -Method POST `
+    -Headers @{"Content-Type"="application/json"} `
+    -Body $body
+```
+
+**Linux/Mac/Bash:**
 ```bash
 curl -X POST https://sahkopomo.pages.dev/api/contacts \
   -H "Content-Type: application/json" \
