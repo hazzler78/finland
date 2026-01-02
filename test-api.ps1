@@ -20,11 +20,28 @@ try {
     $response.Content | ConvertFrom-Json | ConvertTo-Json -Depth 10
 } catch {
     Write-Host "❌ Error: $($_.Exception.Message)" -ForegroundColor Red
+    Write-Host "Status Code: $($_.Exception.Response.StatusCode.value__)" -ForegroundColor Yellow
     if ($_.Exception.Response) {
-        $reader = New-Object System.IO.StreamReader($_.Exception.Response.GetResponseStream())
-        $responseBody = $reader.ReadToEnd()
-        Write-Host "Response body:" -ForegroundColor Yellow
-        Write-Host $responseBody
+        try {
+            $reader = New-Object System.IO.StreamReader($_.Exception.Response.GetResponseStream())
+            $responseBody = $reader.ReadToEnd()
+            $reader.Close()
+            Write-Host "Response body:" -ForegroundColor Yellow
+            Write-Host $responseBody
+            # Try to parse as JSON
+            try {
+                $json = $responseBody | ConvertFrom-Json
+                Write-Host "Parsed error:" -ForegroundColor Red
+                Write-Host "  Error: $($json.error)" -ForegroundColor Red
+                if ($json.details) {
+                    Write-Host "  Details: $($json.details)" -ForegroundColor Red
+                }
+            } catch {
+                # Not JSON, just show raw
+            }
+        } catch {
+            Write-Host "Could not read response body" -ForegroundColor Yellow
+        }
     }
 }
 
@@ -39,11 +56,28 @@ try {
     $response.Content | ConvertFrom-Json | ConvertTo-Json -Depth 10
 } catch {
     Write-Host "❌ Error: $($_.Exception.Message)" -ForegroundColor Red
+    Write-Host "Status Code: $($_.Exception.Response.StatusCode.value__)" -ForegroundColor Yellow
     if ($_.Exception.Response) {
-        $reader = New-Object System.IO.StreamReader($_.Exception.Response.GetResponseStream())
-        $responseBody = $reader.ReadToEnd()
-        Write-Host "Response body:" -ForegroundColor Yellow
-        Write-Host $responseBody
+        try {
+            $reader = New-Object System.IO.StreamReader($_.Exception.Response.GetResponseStream())
+            $responseBody = $reader.ReadToEnd()
+            $reader.Close()
+            Write-Host "Response body:" -ForegroundColor Yellow
+            Write-Host $responseBody
+            # Try to parse as JSON
+            try {
+                $json = $responseBody | ConvertFrom-Json
+                Write-Host "Parsed error:" -ForegroundColor Red
+                Write-Host "  Error: $($json.error)" -ForegroundColor Red
+                if ($json.details) {
+                    Write-Host "  Details: $($json.details)" -ForegroundColor Red
+                }
+            } catch {
+                # Not JSON, just show raw
+            }
+        } catch {
+            Write-Host "Could not read response body" -ForegroundColor Yellow
+        }
     }
 }
 
@@ -58,10 +92,27 @@ try {
     Write-Host "Antal leverantörer: $($data.Count)" -ForegroundColor Green
 } catch {
     Write-Host "❌ Error: $($_.Exception.Message)" -ForegroundColor Red
+    Write-Host "Status Code: $($_.Exception.Response.StatusCode.value__)" -ForegroundColor Yellow
     if ($_.Exception.Response) {
-        $reader = New-Object System.IO.StreamReader($_.Exception.Response.GetResponseStream())
-        $responseBody = $reader.ReadToEnd()
-        Write-Host "Response body:" -ForegroundColor Yellow
-        Write-Host $responseBody
+        try {
+            $reader = New-Object System.IO.StreamReader($_.Exception.Response.GetResponseStream())
+            $responseBody = $reader.ReadToEnd()
+            $reader.Close()
+            Write-Host "Response body:" -ForegroundColor Yellow
+            Write-Host $responseBody
+            # Try to parse as JSON
+            try {
+                $json = $responseBody | ConvertFrom-Json
+                Write-Host "Parsed error:" -ForegroundColor Red
+                Write-Host "  Error: $($json.error)" -ForegroundColor Red
+                if ($json.details) {
+                    Write-Host "  Details: $($json.details)" -ForegroundColor Red
+                }
+            } catch {
+                # Not JSON, just show raw
+            }
+        } catch {
+            Write-Host "Could not read response body" -ForegroundColor Yellow
+        }
     }
 }
