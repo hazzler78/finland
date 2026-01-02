@@ -1,8 +1,73 @@
 // Cloudflare Pages Function for suppliers API
 // This handles all /api/* routes
 
-import { dbRowToDeal, dealToDbRow } from '../../lib/db'
-import { ElectricityDeal } from '../../lib/mockData'
+interface ElectricityDeal {
+  id: string
+  supplier: string
+  price: string
+  basePrice: string
+  monthlyFee: string
+  type: string
+  duration: string
+  renewable: boolean
+  savings: string
+  rating: number
+  affiliateLink: string
+  logo?: string
+}
+
+interface D1Supplier {
+  id: string
+  supplier: string
+  price: string
+  base_price: string
+  monthly_fee: string
+  type: string
+  duration: string
+  renewable: number
+  savings: string
+  rating: number
+  affiliate_link: string
+  logo?: string | null
+  created_at?: number
+  updated_at?: number
+}
+
+// Convert D1 row to ElectricityDeal
+function dbRowToDeal(row: D1Supplier): ElectricityDeal {
+  return {
+    id: row.id,
+    supplier: row.supplier,
+    price: row.price,
+    basePrice: row.base_price,
+    monthlyFee: row.monthly_fee,
+    type: row.type,
+    duration: row.duration,
+    renewable: Boolean(row.renewable),
+    savings: row.savings,
+    rating: row.rating,
+    affiliateLink: row.affiliate_link,
+    logo: row.logo || undefined,
+  }
+}
+
+// Convert ElectricityDeal to D1 insert format
+function dealToDbRow(deal: Omit<ElectricityDeal, 'id'> & { id?: string }): Omit<D1Supplier, 'created_at' | 'updated_at'> {
+  return {
+    id: deal.id || Date.now().toString(),
+    supplier: deal.supplier,
+    price: deal.price,
+    base_price: deal.basePrice,
+    monthly_fee: deal.monthlyFee,
+    type: deal.type,
+    duration: deal.duration,
+    renewable: deal.renewable ? 1 : 0,
+    savings: deal.savings,
+    rating: deal.rating,
+    affiliate_link: deal.affiliateLink,
+    logo: deal.logo || null,
+  }
+}
 
 export async function onRequest(context: any) {
   const { request, env } = context
