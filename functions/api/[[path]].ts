@@ -99,17 +99,6 @@ export async function onRequest(context: any) {
   const url = new URL(request.url)
   const pathname = url.pathname
 
-  // Only handle /api/* routes
-  if (!pathname.startsWith('/api/')) {
-    return new Response(JSON.stringify({ error: 'Not found' }), {
-      status: 404,
-      headers: {
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*',
-      },
-    })
-  }
-
   // Get D1 database binding
   const db = env.DB
 
