@@ -234,68 +234,103 @@ export async function onRequest(context: any) {
 
     // POST /api/contacts - Create new contact
     if (method === 'POST' && pathname === '/api/contacts') {
-      const body = await request.json()
-      const { name, email, subject, message } = body
+      try {
+        const body = await request.json()
+        const { name, email, subject, message } = body
 
-      if (!name || !email || !subject || !message) {
-        return new Response(JSON.stringify({ error: 'Missing required fields' }), {
-          status: 400,
+        if (!name || !email || !subject || !message) {
+          return new Response(JSON.stringify({ error: 'Missing required fields' }), {
+            status: 400,
+            headers: { 
+              'Content-Type': 'application/json',
+              'Access-Control-Allow-Origin': '*',
+            },
+          })
+        }
+
+        // Check if contacts table exists, if not return helpful error
+        if (!db) {
+          return new Response(JSON.stringify({ error: 'Database not configured' }), {
+            status: 500,
+            headers: { 
+              'Content-Type': 'application/json',
+              'Access-Control-Allow-Origin': '*',
+            },
+          })
+        }
+
+        const id = Date.now().toString()
+        const result = await db.prepare(
+          `INSERT INTO contacts (id, name, email, subject, message, created_at, read, replied)
+           VALUES (?, ?, ?, ?, ?, unixepoch(), 0, 0)`
+        ).bind(id, name, email, subject, message).run()
+
+        if (!result.success) {
+          return new Response(JSON.stringify({ error: 'Failed to save contact to database' }), {
+            status: 500,
+            headers: { 
+              'Content-Type': 'application/json',
+              'Access-Control-Allow-Origin': '*',
+            },
+          })
+        }
+
+        // Send Telegram notification to all configured chat IDs
+        const telegramBotToken = env.TELEGRAM_BOT_TOKEN
+        const telegramChatIds = env.TELEGRAM_CHAT_ID // Can be comma-separated list
+        
+        if (telegramBotToken && telegramChatIds) {
+          try {
+            const telegramMessage = `🔔 Uusi yhteydenotto Sähköpomo.fi:sta\n\n` +
+              `📧 Nimi: ${name}\n` +
+              `✉️ Sähköposti: ${email}\n` +
+              `📌 Aihe: ${subject}\n` +
+              `💬 Viesti:\n${message}\n\n` +
+              `🕐 ${new Date().toLocaleString('fi-FI')}`
+            
+            // Support multiple chat IDs (comma-separated)
+            const chatIdList = telegramChatIds.split(',').map(id => id.trim()).filter(id => id)
+            
+            // Send to all chat IDs
+            await Promise.allSettled(
+              chatIdList.map(chatId =>
+                fetch(`https://api.telegram.org/bot${telegramBotToken}/sendMessage`, {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    chat_id: chatId,
+                    text: telegramMessage,
+                    parse_mode: 'HTML'
+                  })
+                })
+              )
+            )
+          } catch (telegramError) {
+            console.error('Telegram notification error:', telegramError)
+            // Don't fail the request if Telegram fails
+          }
+        }
+
+        return new Response(JSON.stringify({ id, name, email, subject, message, success: true }), {
+          status: 201,
+          headers: {
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*',
+          },
+        })
+      } catch (dbError: any) {
+        console.error('Database error:', dbError)
+        return new Response(JSON.stringify({ 
+          error: 'Database error', 
+          details: dbError.message || 'Failed to save contact'
+        }), {
+          status: 500,
           headers: { 
             'Content-Type': 'application/json',
             'Access-Control-Allow-Origin': '*',
           },
         })
       }
-
-      const id = Date.now().toString()
-      await db.prepare(
-        `INSERT INTO contacts (id, name, email, subject, message, created_at, read, replied)
-         VALUES (?, ?, ?, ?, ?, unixepoch(), 0, 0)`
-      ).bind(id, name, email, subject, message).run()
-
-      // Send Telegram notification to all configured chat IDs
-      const telegramBotToken = env.TELEGRAM_BOT_TOKEN
-      const telegramChatIds = env.TELEGRAM_CHAT_ID // Can be comma-separated list
-      
-      if (telegramBotToken && telegramChatIds) {
-        try {
-          const telegramMessage = `🔔 Uusi yhteydenotto Sähköpomo.fi:sta\n\n` +
-            `📧 Nimi: ${name}\n` +
-            `✉️ Sähköposti: ${email}\n` +
-            `📌 Aihe: ${subject}\n` +
-            `💬 Viesti:\n${message}\n\n` +
-            `🕐 ${new Date().toLocaleString('fi-FI')}`
-          
-          // Support multiple chat IDs (comma-separated)
-          const chatIdList = telegramChatIds.split(',').map(id => id.trim()).filter(id => id)
-          
-          // Send to all chat IDs
-          await Promise.allSettled(
-            chatIdList.map(chatId =>
-              fetch(`https://api.telegram.org/bot${telegramBotToken}/sendMessage`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  chat_id: chatId,
-                  text: telegramMessage,
-                  parse_mode: 'HTML'
-                })
-              })
-            )
-          )
-        } catch (telegramError) {
-          console.error('Telegram notification error:', telegramError)
-          // Don't fail the request if Telegram fails
-        }
-      }
-
-      return new Response(JSON.stringify({ id, name, email, subject, message, success: true }), {
-        status: 201,
-        headers: {
-          'Content-Type': 'application/json',
-          'Access-Control-Allow-Origin': '*',
-        },
-      })
     }
 
     // GET /api/contacts - Get all contacts (admin only)

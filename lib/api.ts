@@ -92,19 +92,26 @@ export interface Contact {
 
 // Create new contact
 export async function createContact(contact: Omit<Contact, 'id' | 'created_at' | 'read' | 'replied'>): Promise<Contact> {
-  const response = await fetch(`${API_BASE}/api/contacts`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(contact),
-  })
+  try {
+    const response = await fetch(`${API_BASE}/api/contacts`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(contact),
+    })
 
-  if (!response.ok) {
-    throw new Error('Failed to create contact')
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ error: 'Unknown error' }))
+      console.error('API Error:', errorData)
+      throw new Error(errorData.error || `HTTP ${response.status}: Failed to create contact`)
+    }
+
+    return await response.json()
+  } catch (error: any) {
+    console.error('Network error:', error)
+    throw new Error(error.message || 'Network error: Could not reach server')
   }
-
-  return await response.json()
 }
 
 // Fetch all contacts

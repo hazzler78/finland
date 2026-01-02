@@ -29,8 +29,14 @@ export default function ContactForm() {
       // Reset success message after 5 seconds
       setTimeout(() => setSuccess(false), 5000)
     } catch (err: any) {
-      setError('Virhe lähetettäessä viestiä. Yritä myöhemmin uudelleen.')
+      const errorMessage = err.message || 'Virhe lähetettäessä viestiä. Yritä myöhemmin uudelleen.'
+      setError(errorMessage)
       console.error('Contact form error:', err)
+      console.error('Error details:', {
+        message: err.message,
+        stack: err.stack,
+        response: err.response
+      })
     } finally {
       setLoading(false)
     }
