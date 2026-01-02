@@ -33,6 +33,17 @@ interface D1Supplier {
   updated_at?: number
 }
 
+interface Contact {
+  id: string
+  name: string
+  email: string
+  subject: string
+  message: string
+  read: number
+  replied: number
+  created_at?: number
+}
+
 // Convert D1 row to ElectricityDeal
 function dbRowToDeal(row: D1Supplier): ElectricityDeal {
   return {
@@ -69,11 +80,35 @@ function dealToDbRow(deal: Omit<ElectricityDeal, 'id'> & { id?: string }): Omit<
   }
 }
 
+function dbRowToContact(row: any): Contact {
+  return {
+    id: row.id,
+    name: row.name,
+    email: row.email,
+    subject: row.subject,
+    message: row.message,
+    read: row.read,
+    replied: row.replied,
+    created_at: row.created_at,
+  }
+}
+
 export async function onRequest(context: any) {
   const { request, env } = context
   const { method } = request
   const url = new URL(request.url)
   const pathname = url.pathname
+
+  // Only handle /api/* routes
+  if (!pathname.startsWith('/api/')) {
+    return new Response(JSON.stringify({ error: 'Not found' }), {
+      status: 404,
+      headers: {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*',
+      },
+    })
+  }
 
   // Get D1 database binding
   const db = env.DB
@@ -337,7 +372,7 @@ export async function onRequest(context: any) {
     if (method === 'GET' && pathname === '/api/contacts') {
       const result = await db.prepare('SELECT * FROM contacts ORDER BY created_at DESC').all()
       
-      return new Response(JSON.stringify(result.results), {
+      return new Response(JSON.stringify(result.results.map((row: any) => dbRowToContact(row))), {
         headers: {
           'Content-Type': 'application/json',
           'Access-Control-Allow-Origin': '*',
@@ -360,7 +395,7 @@ export async function onRequest(context: any) {
         })
       }
 
-      return new Response(JSON.stringify(result), {
+      return new Response(JSON.stringify(dbRowToContact(result)), {
         headers: {
           'Content-Type': 'application/json',
           'Access-Control-Allow-Origin': '*',
@@ -404,7 +439,7 @@ export async function onRequest(context: any) {
 
       const updated = await db.prepare('SELECT * FROM contacts WHERE id = ?').bind(id).first()
 
-      return new Response(JSON.stringify(updated), {
+      return new Response(JSON.stringify(dbRowToContact(updated)), {
         headers: {
           'Content-Type': 'application/json',
           'Access-Control-Allow-Origin': '*',
