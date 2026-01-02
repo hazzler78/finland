@@ -289,7 +289,7 @@ export async function onRequest(context: any) {
               `🕐 ${new Date().toLocaleString('fi-FI')}`
             
             // Support multiple chat IDs (comma-separated)
-            const chatIdList = telegramChatIds.split(',').map(id => id.trim()).filter(id => id)
+            const chatIdList = telegramChatIds.split(',').map((id: string) => id.trim()).filter((id: string) => id)
             
             // Send to all chat IDs
             await Promise.allSettled(
