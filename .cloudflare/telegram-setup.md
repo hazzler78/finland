@@ -27,15 +27,27 @@
 
    **Production:**
    - `TELEGRAM_BOT_TOKEN` = Din bot token från BotFather
-   - `TELEGRAM_CHAT_ID` = Ditt chat ID (bara numret, t.ex. `123456789`)
+     - Exempel: `8555429440:AAFyb4n6JLQFU_3NcPoW4E3PhVEHImdIG1g`
+   - `TELEGRAM_CHAT_ID` = Ditt chat ID (bara numret, t.ex. `6569007750`)
+     - För flera mottagare: separera med komma (t.ex. `6569007750,123456789,987654321`)
 
 4. Klicka på **Save**
 
-## Steg 4: Testa
+## Steg 4: Konfigurera i Cloudflare Pages (Nuvarande värden)
+
+**Testade värden:**
+- `TELEGRAM_BOT_TOKEN`: `8555429440:AAFyb4n6JLQFU_3NcPoW4E3PhVEHImdIG1g`
+- `TELEGRAM_CHAT_ID`: `6569007750`
+
+**För flera mottagare:** Lägg till fler chat IDs separerade med komma:
+- `TELEGRAM_CHAT_ID`: `6569007750,123456789,987654321`
+
+## Steg 5: Testa
 
 1. Gå till `/yhteystiedot` på din webbplats
 2. Fyll i kontaktformuläret och skicka
 3. Du bör få ett Telegram-meddelande med kontaktinformationen
+4. Om du har flera chat IDs konfigurerade kommer alla att få notifikationen
 
 ## Felsökning
 

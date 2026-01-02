@@ -253,11 +253,11 @@ export async function onRequest(context: any) {
          VALUES (?, ?, ?, ?, ?, unixepoch(), 0, 0)`
       ).bind(id, name, email, subject, message).run()
 
-      // Send Telegram notification
+      // Send Telegram notification to all configured chat IDs
       const telegramBotToken = env.TELEGRAM_BOT_TOKEN
-      const telegramChatId = env.TELEGRAM_CHAT_ID
+      const telegramChatIds = env.TELEGRAM_CHAT_ID // Can be comma-separated list
       
-      if (telegramBotToken && telegramChatId) {
+      if (telegramBotToken && telegramChatIds) {
         try {
           const telegramMessage = `🔔 Uusi yhteydenotto Sähköpomo.fi:sta\n\n` +
             `📧 Nimi: ${name}\n` +
@@ -266,15 +266,23 @@ export async function onRequest(context: any) {
             `💬 Viesti:\n${message}\n\n` +
             `🕐 ${new Date().toLocaleString('fi-FI')}`
           
-          await fetch(`https://api.telegram.org/bot${telegramBotToken}/sendMessage`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              chat_id: telegramChatId,
-              text: telegramMessage,
-              parse_mode: 'HTML'
-            })
-          })
+          // Support multiple chat IDs (comma-separated)
+          const chatIdList = telegramChatIds.split(',').map(id => id.trim()).filter(id => id)
+          
+          // Send to all chat IDs
+          await Promise.allSettled(
+            chatIdList.map(chatId =>
+              fetch(`https://api.telegram.org/bot${telegramBotToken}/sendMessage`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  chat_id: chatId,
+                  text: telegramMessage,
+                  parse_mode: 'HTML'
+                })
+              })
+            )
+          )
         } catch (telegramError) {
           console.error('Telegram notification error:', telegramError)
           // Don't fail the request if Telegram fails
