@@ -293,7 +293,7 @@ export async function onRequest(context: any) {
             
             // Send to all chat IDs
             await Promise.allSettled(
-              chatIdList.map(chatId =>
+              chatIdList.map((chatId: string) =>
                 fetch(`https://api.telegram.org/bot${telegramBotToken}/sendMessage`, {
                   method: 'POST',
                   headers: { 'Content-Type': 'application/json' },
