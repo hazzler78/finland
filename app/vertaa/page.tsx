@@ -210,7 +210,11 @@ function ComparisonResults() {
             </div>
 
             {/* Deal Cards */}
-            {filteredAndSortedDeals.length > 0 ? (
+            {loading ? (
+              <div className="glass-card p-12 text-center">
+                <p className="text-lg text-gray-600">Ladataan sopimuksia...</p>
+              </div>
+            ) : filteredAndSortedDeals.length > 0 ? (
               <div className="space-y-6">
                 {filteredAndSortedDeals.map((deal, index) => (
                   <div key={deal.id} className="glass-card p-6 hover:shadow-xl transition-all duration-300">
