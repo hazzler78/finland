@@ -21,11 +21,28 @@ function ComparisonResults() {
     maxPrice: '',
   })
   
+  const [allDeals, setAllDeals] = useState<ElectricityDeal[]>([])
+  const [loading, setLoading] = useState(true)
+
   const [sortBy, setSortBy] = useState<'price' | 'savings' | 'rating'>('price')
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc')
 
+  useEffect(() => {
+    const loadDeals = async () => {
+      try {
+        const deals = await fetchSuppliers()
+        setAllDeals(deals)
+      } catch (error) {
+        console.error('Error loading deals:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+    loadDeals()
+  }, [])
+
   const filteredAndSortedDeals = useMemo(() => {
-    let filtered = [...getDeals()]
+    let filtered = [...allDeals]
 
     // Apply filters
     if (filters.contractType !== 'all') {
