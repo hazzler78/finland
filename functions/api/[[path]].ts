@@ -230,6 +230,168 @@ export async function onRequest(context: any) {
       })
     }
 
+    // CONTACTS API
+
+    // POST /api/contacts - Create new contact
+    if (method === 'POST' && pathname === '/api/contacts') {
+      const body = await request.json()
+      const { name, email, subject, message } = body
+
+      if (!name || !email || !subject || !message) {
+        return new Response(JSON.stringify({ error: 'Missing required fields' }), {
+          status: 400,
+          headers: { 
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*',
+          },
+        })
+      }
+
+      const id = Date.now().toString()
+      await db.prepare(
+        `INSERT INTO contacts (id, name, email, subject, message, created_at, read, replied)
+         VALUES (?, ?, ?, ?, ?, unixepoch(), 0, 0)`
+      ).bind(id, name, email, subject, message).run()
+
+      // Send Telegram notification
+      const telegramBotToken = env.TELEGRAM_BOT_TOKEN
+      const telegramChatId = env.TELEGRAM_CHAT_ID
+      
+      if (telegramBotToken && telegramChatId) {
+        try {
+          const telegramMessage = `🔔 Uusi yhteydenotto Sähköpomo.fi:sta\n\n` +
+            `📧 Nimi: ${name}\n` +
+            `✉️ Sähköposti: ${email}\n` +
+            `📌 Aihe: ${subject}\n` +
+            `💬 Viesti:\n${message}\n\n` +
+            `🕐 ${new Date().toLocaleString('fi-FI')}`
+          
+          await fetch(`https://api.telegram.org/bot${telegramBotToken}/sendMessage`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              chat_id: telegramChatId,
+              text: telegramMessage,
+              parse_mode: 'HTML'
+            })
+          })
+        } catch (telegramError) {
+          console.error('Telegram notification error:', telegramError)
+          // Don't fail the request if Telegram fails
+        }
+      }
+
+      return new Response(JSON.stringify({ id, name, email, subject, message, success: true }), {
+        status: 201,
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*',
+        },
+      })
+    }
+
+    // GET /api/contacts - Get all contacts (admin only)
+    if (method === 'GET' && pathname === '/api/contacts') {
+      const result = await db.prepare('SELECT * FROM contacts ORDER BY created_at DESC').all()
+      
+      return new Response(JSON.stringify(result.results), {
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*',
+        },
+      })
+    }
+
+    // GET /api/contacts/:id - Get single contact
+    if (method === 'GET' && pathname.startsWith('/api/contacts/')) {
+      const id = pathname.split('/').pop()
+      const result = await db.prepare('SELECT * FROM contacts WHERE id = ?').bind(id).first()
+      
+      if (!result) {
+        return new Response(JSON.stringify({ error: 'Not found' }), {
+          status: 404,
+          headers: { 
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*',
+          },
+        })
+      }
+
+      return new Response(JSON.stringify(result), {
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*',
+        },
+      })
+    }
+
+    // PUT /api/contacts/:id - Update contact (mark as read/replied)
+    if (method === 'PUT' && pathname.startsWith('/api/contacts/')) {
+      const id = pathname.split('/').pop()
+      const body = await request.json()
+      
+      const updates: string[] = []
+      const values: any[] = []
+      
+      if (body.read !== undefined) {
+        updates.push('read = ?')
+        values.push(body.read ? 1 : 0)
+      }
+      
+      if (body.replied !== undefined) {
+        updates.push('replied = ?')
+        values.push(body.replied ? 1 : 0)
+      }
+      
+      if (updates.length === 0) {
+        return new Response(JSON.stringify({ error: 'No updates provided' }), {
+          status: 400,
+          headers: { 
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*',
+          },
+        })
+      }
+      
+      values.push(id)
+      
+      await db.prepare(
+        `UPDATE contacts SET ${updates.join(', ')} WHERE id = ?`
+      ).bind(...values).run()
+
+      const updated = await db.prepare('SELECT * FROM contacts WHERE id = ?').bind(id).first()
+
+      return new Response(JSON.stringify(updated), {
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*',
+        },
+      })
+    }
+
+    // DELETE /api/contacts/:id - Delete contact
+    if (method === 'DELETE' && pathname.startsWith('/api/contacts/')) {
+      const id = pathname.split('/').pop()
+      const result = await db.prepare('DELETE FROM contacts WHERE id = ?').bind(id).run()
+
+      if (result.success) {
+        return new Response(JSON.stringify({ success: true }), {
+          headers: {
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*',
+          },
+        })
+      }
+
+      return new Response(JSON.stringify({ error: 'Not found' }), {
+        status: 404,
+        headers: { 
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*',
+        },
+      })
+    }
+
     return new Response(JSON.stringify({ error: 'Not found' }), {
       status: 404,
       headers: { 

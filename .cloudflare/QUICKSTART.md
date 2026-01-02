@@ -49,11 +49,21 @@ curl https://sahkopomo.pages.dev/api/suppliers
 # https://sahkopomo.pages.dev/api/suppliers
 ```
 
-### 5. Testa admin-sidan
+### 5. Konfigurera Telegram-bot (valfritt)
+
+För att få notifikationer när någon skickar kontaktformulär:
+
+1. Följ instruktionerna i `.cloudflare/telegram-setup.md`
+2. Lägg till environment variables i Cloudflare Pages:
+   - `TELEGRAM_BOT_TOKEN`
+   - `TELEGRAM_CHAT_ID`
+
+### 6. Testa admin-sidan
 
 1. Gå till `https://sahkopomo.pages.dev/admin`
 2. Logga in med lösenord: `admin2026`
 3. Testa att lägga till, redigera eller ta bort leverantörer
+4. Växla till "Yhteydenotot"-fliken för att se kontakter
 
 ## Felsökning
 

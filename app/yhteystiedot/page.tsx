@@ -1,5 +1,6 @@
 import { Metadata } from 'next'
 import { Mail, Phone, MapPin, Clock } from 'lucide-react'
+import ContactForm from '@/components/ContactForm'
 
 export const metadata: Metadata = {
   title: 'Yhteystiedot - Sähköpomo.fi',
@@ -80,68 +81,7 @@ export default function ContactPage() {
           </div>
         </div>
 
-        <div className="glass-card p-8">
-          <h2 className="text-2xl font-display font-bold text-gray-900 mb-6">
-            Lähetä viesti
-          </h2>
-          <form className="space-y-6">
-            <div>
-              <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
-                Nimi
-              </label>
-              <input
-                type="text"
-                id="name"
-                name="name"
-                className="input-field"
-                required
-              />
-            </div>
-            
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
-                Sähköposti
-              </label>
-              <input
-                type="email"
-                id="email"
-                name="email"
-                className="input-field"
-                required
-              />
-            </div>
-            
-            <div>
-              <label htmlFor="subject" className="block text-sm font-medium text-gray-700 mb-2">
-                Aihe
-              </label>
-              <input
-                type="text"
-                id="subject"
-                name="subject"
-                className="input-field"
-                required
-              />
-            </div>
-            
-            <div>
-              <label htmlFor="message" className="block text-sm font-medium text-gray-700 mb-2">
-                Viesti
-              </label>
-              <textarea
-                id="message"
-                name="message"
-                rows={6}
-                className="input-field"
-                required
-              ></textarea>
-            </div>
-            
-            <button type="submit" className="btn-primary w-full md:w-auto">
-              Lähetä viesti
-            </button>
-          </form>
-        </div>
+        <ContactForm />
 
         <div className="mt-12 glass-card p-6 bg-primary/5">
           <h3 className="font-display font-semibold text-gray-900 mb-2">

@@ -4,11 +4,14 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Plus, Edit, Trash2, Save, X, Lock, Loader2 } from 'lucide-react'
 import { ElectricityDeal } from '@/lib/mockData'
-import { fetchSuppliers, createSupplier, updateSupplier, deleteSupplier } from '@/lib/api'
+import { fetchSuppliers, createSupplier, updateSupplier, deleteSupplier, fetchContacts, Contact } from '@/lib/api'
+import ContactsTab from '@/components/ContactsTab'
 
 export default function AdminPage() {
   const router = useRouter()
+  const [activeTab, setActiveTab] = useState<'suppliers' | 'contacts'>('suppliers')
   const [deals, setDeals] = useState<ElectricityDeal[]>([])
+  const [contacts, setContacts] = useState<Contact[]>([])
   const [editingId, setEditingId] = useState<string | null>(null)
   const [isAdding, setIsAdding] = useState(false)
   const [formData, setFormData] = useState<Partial<ElectricityDeal>>({})
@@ -23,6 +26,7 @@ export default function AdminPage() {
     if (storedAuth === 'true') {
       setIsAuthenticated(true)
       loadDeals()
+      loadContacts()
     }
   }, [])
 
@@ -40,6 +44,15 @@ export default function AdminPage() {
     }
   }
 
+  const loadContacts = async () => {
+    try {
+      const loadedContacts = await fetchContacts()
+      setContacts(loadedContacts)
+    } catch (err: any) {
+      console.error('Error loading contacts:', err)
+    }
+  }
+
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault()
     // Simple password check (change this password!)
@@ -47,6 +60,7 @@ export default function AdminPage() {
       setIsAuthenticated(true)
       sessionStorage.setItem('admin_authenticated', 'true')
       loadDeals()
+      loadContacts()
     } else {
       alert('Väärä salasana')
     }
@@ -175,20 +189,22 @@ export default function AdminPage() {
         <div className="flex justify-between items-center mb-8">
           <div>
             <h1 className="text-3xl md:text-4xl font-display font-bold text-gray-900 mb-2">
-              Admin - Leverantörien hallinta
+              Admin-paneeli
             </h1>
             <p className="text-gray-600">
-              Hallinnoi sähkösopimusten tarjoajia
+              Hallinnoi leverantörejä ja kontakteja
             </p>
           </div>
           <div className="flex gap-4">
-            <button
-              onClick={handleAddNew}
-              className="btn-primary flex items-center gap-2"
-            >
-              <Plus size={20} />
-              Lisää uusi
-            </button>
+            {activeTab === 'suppliers' && (
+              <button
+                onClick={handleAddNew}
+                className="btn-primary flex items-center gap-2"
+              >
+                <Plus size={20} />
+                Lisää uusi
+              </button>
+            )}
             <button
               onClick={handleLogout}
               className="px-4 py-2 border border-gray-300 rounded-xl text-gray-700 hover:bg-gray-50 transition-colors"
@@ -198,7 +214,36 @@ export default function AdminPage() {
           </div>
         </div>
 
-        {(isAdding || editingId) && (
+        {/* Tabs */}
+        <div className="flex gap-4 mb-6 border-b border-gray-200">
+          <button
+            onClick={() => setActiveTab('suppliers')}
+            className={`px-6 py-3 font-medium transition-colors border-b-2 ${
+              activeTab === 'suppliers'
+                ? 'border-primary text-primary'
+                : 'border-transparent text-gray-600 hover:text-gray-900'
+            }`}
+          >
+            Leverantörit ({deals.length})
+          </button>
+          <button
+            onClick={() => setActiveTab('contacts')}
+            className={`px-6 py-3 font-medium transition-colors border-b-2 relative ${
+              activeTab === 'contacts'
+                ? 'border-primary text-primary'
+                : 'border-transparent text-gray-600 hover:text-gray-900'
+            }`}
+          >
+            Yhteydenotot ({contacts.length})
+            {contacts.filter(c => !c.read).length > 0 && (
+              <span className="absolute top-1 right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                {contacts.filter(c => !c.read).length}
+              </span>
+            )}
+          </button>
+        </div>
+
+        {activeTab === 'suppliers' && (isAdding || editingId) && (
           <div className="glass-card p-6 mb-6">
             <h2 className="text-xl font-display font-bold text-gray-900 mb-4">
               {editingId ? 'Muokkaa leverantöriä' : 'Lisää uusi leverantöri'}
@@ -359,60 +404,79 @@ export default function AdminPage() {
           </div>
         )}
 
-        <div className="glass-card p-6">
-          <h2 className="text-xl font-display font-bold text-gray-900 mb-4">
-            Leverantörit ({deals.length})
-          </h2>
-          
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-gray-200">
-                  <th className="text-left py-3 px-4 font-semibold text-gray-700">Leverantöri</th>
-                  <th className="text-left py-3 px-4 font-semibold text-gray-700">Hinta</th>
-                  <th className="text-left py-3 px-4 font-semibold text-gray-700">Tyyppi</th>
-                  <th className="text-left py-3 px-4 font-semibold text-gray-700">Arvostelu</th>
-                  <th className="text-right py-3 px-4 font-semibold text-gray-700">Toiminnot</th>
-                </tr>
-              </thead>
-              <tbody>
-                {deals.map((deal) => (
-                  <tr key={deal.id} className="border-b border-gray-100 hover:bg-gray-50">
-                    <td className="py-3 px-4">
-                      <div className="font-medium text-gray-900">{deal.supplier}</div>
-                      {deal.renewable && (
-                        <span className="text-xs text-primary">Uusiutuva</span>
-                      )}
-                    </td>
-                    <td className="py-3 px-4 text-gray-700">{deal.basePrice}</td>
-                    <td className="py-3 px-4 text-gray-700">{deal.type}</td>
-                    <td className="py-3 px-4">
-                      <span className="text-sm font-medium">⭐ {deal.rating}</span>
-                    </td>
-                    <td className="py-3 px-4">
-                      <div className="flex justify-end gap-2">
-                        <button
-                          onClick={() => handleEdit(deal)}
-                          className="p-2 text-primary hover:bg-primary/10 rounded-lg transition-colors"
-                          title="Muokkaa"
-                        >
-                          <Edit size={18} />
-                        </button>
-                        <button
-                          onClick={() => handleDelete(deal.id)}
-                          className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                          title="Poista"
-                        >
-                          <Trash2 size={18} />
-                        </button>
-                      </div>
-                    </td>
+        {activeTab === 'suppliers' && (
+          <div className="glass-card p-6">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-display font-bold text-gray-900">
+                Leverantörit ({deals.length})
+              </h2>
+              {loading && <Loader2 className="animate-spin text-primary" size={20} />}
+            </div>
+            
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-gray-200">
+                    <th className="text-left py-3 px-4 font-semibold text-gray-700">Leverantöri</th>
+                    <th className="text-left py-3 px-4 font-semibold text-gray-700">Hinta</th>
+                    <th className="text-left py-3 px-4 font-semibold text-gray-700">Tyyppi</th>
+                    <th className="text-left py-3 px-4 font-semibold text-gray-700">Arvostelu</th>
+                    <th className="text-right py-3 px-4 font-semibold text-gray-700">Toiminnot</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {deals.map((deal) => (
+                    <tr key={deal.id} className="border-b border-gray-100 hover:bg-gray-50">
+                      <td className="py-3 px-4">
+                        <div className="font-medium text-gray-900">{deal.supplier}</div>
+                        {deal.renewable && (
+                          <span className="text-xs text-primary">Uusiutuva</span>
+                        )}
+                      </td>
+                      <td className="py-3 px-4 text-gray-700">{deal.basePrice}</td>
+                      <td className="py-3 px-4 text-gray-700">{deal.type}</td>
+                      <td className="py-3 px-4">
+                        <span className="text-sm font-medium">⭐ {deal.rating}</span>
+                      </td>
+                      <td className="py-3 px-4">
+                        <div className="flex justify-end gap-2">
+                          <button
+                            onClick={() => handleEdit(deal)}
+                            className="p-2 text-primary hover:bg-primary/10 rounded-lg transition-colors"
+                            title="Muokkaa"
+                          >
+                            <Edit size={18} />
+                          </button>
+                          <button
+                            onClick={() => handleDelete(deal.id)}
+                            className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                            title="Poista"
+                          >
+                            <Trash2 size={18} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
-        </div>
+        )}
+
+        {activeTab === 'contacts' && (
+          <ContactsTab 
+            contacts={contacts} 
+            onRefresh={loadContacts}
+            loading={loading}
+          />
+        )}
+
+        {error && (
+          <div className="glass-card p-4 mt-6 bg-red-50 border border-red-200">
+            <p className="text-red-700">{error}</p>
+          </div>
+        )}
       </div>
     </div>
   )
