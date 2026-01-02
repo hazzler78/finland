@@ -1,0 +1,11 @@
+# Cloudflare Pages configuration
+# This file is used when deploying to Cloudflare Pages
+
+name = "sahkopomo"
+compatibility_date = "2024-01-01"
+
+[env.production]
+name = "sahkopomo"
+
+# Pages configuration
+pages_build_output_dir = "out"
