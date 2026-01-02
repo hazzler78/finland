@@ -1,10 +1,11 @@
 'use client'
 
-import { useState, useMemo, Suspense } from 'react'
+import { useState, useMemo, Suspense, useEffect } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { ArrowUp, ArrowDown } from 'lucide-react'
 import DealFilters, { FilterState } from '@/components/DealFilters'
-import { mockDeals, ElectricityDeal } from '@/lib/mockData'
+import { ElectricityDeal } from '@/lib/mockData'
+import { fetchSuppliers } from '@/lib/api'
 
 function ComparisonResults() {
   const searchParams = useSearchParams()
@@ -24,7 +25,7 @@ function ComparisonResults() {
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc')
 
   const filteredAndSortedDeals = useMemo(() => {
-    let filtered = [...mockDeals]
+    let filtered = [...getDeals()]
 
     // Apply filters
     if (filters.contractType !== 'all') {
@@ -71,7 +72,7 @@ function ComparisonResults() {
     })
 
     return filtered
-  }, [filters, sortBy, sortOrder])
+  }, [allDeals, filters, sortBy, sortOrder])
 
   const handleSort = (field: 'price' | 'savings' | 'rating') => {
     if (sortBy === field) {

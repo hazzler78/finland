@@ -126,11 +126,19 @@ npm run build
 
 ## API-integraatio
 
-Tällä hetkellä sivusto käyttää mock-dataa (`lib/mockData.ts`). Tuotannossa korvaa tämä oikealla API:lla:
+Sivusto käyttää Cloudflare D1-databasia leverantörsdataan. API-routes finns i `functions/api/suppliers.ts`.
 
-1. Päivitä `lib/mockData.ts` tai luo uusi API-moduuli
-2. Lisää API-kutsu komponentteihin
-3. Käsittele lataustilat ja virheet
+### D1 Database Setup
+
+Se `.cloudflare/d1-setup.md` för instruktioner om hur du skapar och konfigurerar D1-databasen.
+
+### API Endpoints
+
+- `GET /api/suppliers` - Hämta alla leverantörer
+- `GET /api/suppliers/:id` - Hämta en leverantör
+- `POST /api/suppliers` - Skapa ny leverantör
+- `PUT /api/suppliers/:id` - Uppdatera leverantör
+- `DELETE /api/suppliers/:id` - Ta bort leverantör
 
 ## SEO
 

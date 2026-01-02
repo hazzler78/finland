@@ -13,6 +13,25 @@ export interface ElectricityDeal {
   logo?: string
 }
 
+// Function to get deals (checks localStorage first, falls back to mock data)
+export function getDeals(): ElectricityDeal[] {
+  if (typeof window === 'undefined') {
+    return mockDeals
+  }
+  
+  const stored = localStorage.getItem('sahkopomo_deals')
+  if (stored) {
+    try {
+      const parsed = JSON.parse(stored)
+      return parsed.length > 0 ? parsed : mockDeals
+    } catch {
+      return mockDeals
+    }
+  }
+  
+  return mockDeals
+}
+
 export const mockDeals: ElectricityDeal[] = [
   {
     id: '1',

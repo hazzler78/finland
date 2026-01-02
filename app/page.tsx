@@ -5,6 +5,8 @@ import HowItWorks from '@/components/HowItWorks'
 import { mockDeals } from '@/lib/mockData'
 
 export default function HomePage() {
+  // Server component - use mockDeals directly
+  // Client-side will use localStorage data via getDeals() in client components
   const featuredDeals = mockDeals.slice(0, 6)
 
   return (

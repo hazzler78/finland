@@ -4,8 +4,11 @@
 name = "sahkopomo"
 compatibility_date = "2024-01-01"
 
-[env.production]
-name = "sahkopomo"
-
 # Pages configuration
 pages_build_output_dir = "out"
+
+# D1 Database configuration
+[[d1_databases]]
+binding = "DB"
+database_name = "sahkopomo-db"
+database_id = "f41acc00-bbbf-48ce-8e83-3424c77803cf"

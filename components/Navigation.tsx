@@ -34,6 +34,9 @@ export default function Navigation() {
             <Link href="/yhteystiedot" className="text-gray-700 hover:text-primary transition-colors font-medium">
               Yhteystiedot
             </Link>
+            <Link href="/admin" className="text-gray-500 hover:text-primary transition-colors font-medium text-sm">
+              Admin
+            </Link>
           </div>
 
           {/* Mobile menu button */}
