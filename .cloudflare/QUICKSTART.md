@@ -95,6 +95,12 @@ wrangler d1 execute sahkopomo-db --command="SELECT name FROM sqlite_master WHERE
 # Se alla leverantörer
 wrangler d1 execute sahkopomo-db --command="SELECT * FROM suppliers;"
 
+# Se alla kontakter
+wrangler d1 execute sahkopomo-db --command="SELECT * FROM contacts ORDER BY created_at DESC;"
+
 # Se antal leverantörer
 wrangler d1 execute sahkopomo-db --command="SELECT COUNT(*) as count FROM suppliers;"
+
+# Se antal kontakter
+wrangler d1 execute sahkopomo-db --command="SELECT COUNT(*) as count FROM contacts;"
 ```
