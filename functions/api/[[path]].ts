@@ -335,7 +335,10 @@ export async function onRequest(context: any) {
           }
         }
 
-        return new Response(JSON.stringify({ id, name, email, subject, message, success: true }), {
+        // Fetch the created contact to return complete object
+        const created = await db.prepare('SELECT * FROM contacts WHERE id = ?').bind(id).first()
+        
+        return new Response(JSON.stringify(dbRowToContact(created)), {
           status: 201,
           headers: {
             'Content-Type': 'application/json',
