@@ -344,9 +344,25 @@ export async function onRequest(context: any) {
         })
       } catch (dbError: any) {
         console.error('Database error:', dbError)
+        const errorMessage = dbError.message || 'Unknown database error'
+        
+        // Check if it's a table missing error
+        if (errorMessage.includes('no such table') || errorMessage.includes('contacts')) {
+          return new Response(JSON.stringify({ 
+            error: 'Contacts table not found. Please run migration: wrangler d1 execute sahkopomo-db --file=./db/migrations/0002_add_contacts.sql',
+            details: errorMessage
+          }), {
+            status: 500,
+            headers: { 
+              'Content-Type': 'application/json',
+              'Access-Control-Allow-Origin': '*',
+            },
+          })
+        }
+        
         return new Response(JSON.stringify({ 
           error: 'Database error', 
-          details: dbError.message || 'Failed to save contact'
+          details: errorMessage
         }), {
           status: 500,
           headers: { 

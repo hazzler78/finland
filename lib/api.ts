@@ -102,9 +102,11 @@ export async function createContact(contact: Omit<Contact, 'id' | 'created_at' |
     })
 
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({ error: 'Unknown error' }))
+      const errorData = await response.json().catch(() => ({ error: 'Unknown error', details: '' }))
       console.error('API Error:', errorData)
-      throw new Error(errorData.error || `HTTP ${response.status}: Failed to create contact`)
+      const errorMessage = errorData.error || `HTTP ${response.status}: Failed to create contact`
+      const errorWithDetails = errorData.details ? `${errorMessage}: ${errorData.details}` : errorMessage
+      throw new Error(errorWithDetails)
     }
 
     return await response.json()
