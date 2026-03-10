@@ -14,6 +14,7 @@ export interface D1Supplier {
   rating: number
   affiliate_link: string
   logo?: string | null
+  show_on_frontpage?: number
   created_at?: number
   updated_at?: number
 }
@@ -33,11 +34,14 @@ export function dbRowToDeal(row: D1Supplier): ElectricityDeal {
     rating: row.rating,
     affiliateLink: row.affiliate_link,
     logo: row.logo || undefined,
+    showOnFrontpage: row.show_on_frontpage !== undefined ? Boolean(row.show_on_frontpage) : true,
   }
 }
 
 // Convert ElectricityDeal to D1 insert format
-export function dealToDbRow(deal: Omit<ElectricityDeal, 'id'> & { id?: string }): Omit<D1Supplier, 'created_at' | 'updated_at'> {
+export function dealToDbRow(
+  deal: Omit<ElectricityDeal, 'id'> & { id?: string }
+): Omit<D1Supplier, 'created_at' | 'updated_at'> {
   return {
     id: deal.id || Date.now().toString(),
     supplier: deal.supplier,
@@ -51,5 +55,6 @@ export function dealToDbRow(deal: Omit<ElectricityDeal, 'id'> & { id?: string })
     rating: deal.rating,
     affiliate_link: deal.affiliateLink,
     logo: deal.logo || null,
+    show_on_frontpage: deal.showOnFrontpage === false ? 0 : 1,
   }
 }

@@ -1,14 +1,9 @@
 import ComparisonTool from '@/components/ComparisonTool'
-import DealCard from '@/components/DealCard'
+import FeaturedDeals from '@/components/FeaturedDeals'
 import TrustBadges from '@/components/TrustBadges'
 import HowItWorks from '@/components/HowItWorks'
-import { mockDeals } from '@/lib/mockData'
 
 export default function HomePage() {
-  // Server component - use mockDeals directly
-  // Client-side will use localStorage data via getDeals() in client components
-  const featuredDeals = mockDeals.slice(0, 6)
-
   return (
     <div className="min-h-screen">
       {/* Hero Section */}
@@ -53,11 +48,7 @@ export default function HomePage() {
             </p>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {featuredDeals.map((deal, index) => (
-              <DealCard key={deal.id} deal={deal} index={index} />
-            ))}
-          </div>
+          <FeaturedDeals />
           
           <div className="text-center mt-12">
             <a

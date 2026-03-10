@@ -14,6 +14,7 @@ interface ElectricityDeal {
   rating: number
   affiliateLink: string
   logo?: string
+  showOnFrontpage?: boolean
 }
 
 interface D1Supplier {
@@ -29,6 +30,7 @@ interface D1Supplier {
   rating: number
   affiliate_link: string
   logo?: string | null
+  show_on_frontpage?: number
   created_at?: number
   updated_at?: number
 }
@@ -59,11 +61,14 @@ function dbRowToDeal(row: D1Supplier): ElectricityDeal {
     rating: row.rating,
     affiliateLink: row.affiliate_link,
     logo: row.logo || undefined,
+    showOnFrontpage: row.show_on_frontpage !== undefined ? Boolean(row.show_on_frontpage) : true,
   }
 }
 
 // Convert ElectricityDeal to D1 insert format
-function dealToDbRow(deal: Omit<ElectricityDeal, 'id'> & { id?: string }): Omit<D1Supplier, 'created_at' | 'updated_at'> {
+function dealToDbRow(
+  deal: Omit<ElectricityDeal, 'id'> & { id?: string }
+): Omit<D1Supplier, 'created_at' | 'updated_at'> {
   return {
     id: deal.id || Date.now().toString(),
     supplier: deal.supplier,
@@ -77,6 +82,7 @@ function dealToDbRow(deal: Omit<ElectricityDeal, 'id'> & { id?: string }): Omit<
     rating: deal.rating,
     affiliate_link: deal.affiliateLink,
     logo: deal.logo || null,
+    show_on_frontpage: deal.showOnFrontpage === false ? 0 : 1,
   }
 }
 
@@ -157,8 +163,8 @@ export async function onRequest(context: any) {
       const row = dealToDbRow({ ...body, id })
 
       await db.prepare(
-        `INSERT INTO suppliers (id, supplier, price, base_price, monthly_fee, type, duration, renewable, savings, rating, affiliate_link, logo, created_at, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, unixepoch(), unixepoch())`
+        `INSERT INTO suppliers (id, supplier, price, base_price, monthly_fee, type, duration, renewable, savings, rating, affiliate_link, logo, show_on_frontpage, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, unixepoch(), unixepoch())`
       ).bind(
         row.id,
         row.supplier,
@@ -171,7 +177,8 @@ export async function onRequest(context: any) {
         row.savings,
         row.rating,
         row.affiliate_link,
-        row.logo
+        row.logo,
+        row.show_on_frontpage ?? 1
       ).run()
 
       return new Response(JSON.stringify({ id, ...body }), {
@@ -206,7 +213,7 @@ export async function onRequest(context: any) {
       await db.prepare(
         `UPDATE suppliers 
          SET supplier = ?, price = ?, base_price = ?, monthly_fee = ?, type = ?, duration = ?, 
-             renewable = ?, savings = ?, rating = ?, affiliate_link = ?, logo = ?, updated_at = unixepoch()
+             renewable = ?, savings = ?, rating = ?, affiliate_link = ?, logo = ?, show_on_frontpage = ?, updated_at = unixepoch()
          WHERE id = ?`
       ).bind(
         row.supplier,
@@ -220,10 +227,11 @@ export async function onRequest(context: any) {
         row.rating,
         row.affiliate_link,
         row.logo,
+        row.show_on_frontpage ?? 1,
         id
       ).run()
 
-      return new Response(JSON.stringify(dbRowToDeal(row)), {
+      return new Response(JSON.stringify(dbRowToDeal({ ...(existing as D1Supplier), ...row })), {
         headers: {
           'Content-Type': 'application/json',
           'Access-Control-Allow-Origin': '*',

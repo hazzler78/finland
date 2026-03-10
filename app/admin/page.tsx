@@ -138,6 +138,7 @@ export default function AdminPage() {
       savings: '',
       rating: 4.0,
       affiliateLink: '',
+      showOnFrontpage: true,
     })
   }
 
@@ -384,6 +385,25 @@ export default function AdminPage() {
                     </span>
                   </label>
                 </div>
+
+                <div className="md:col-span-2">
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={formData.showOnFrontpage !== false}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          showOnFrontpage: e.target.checked,
+                        })
+                      }
+                      className="w-4 h-4 text-primary border-gray-300 rounded focus:ring-primary"
+                    />
+                    <span className="text-sm font-medium text-gray-700">
+                      Näytä etusivun "Suosituimmat" -listassa
+                    </span>
+                  </label>
+                </div>
               </div>
               
               <div className="flex gap-4">
@@ -421,6 +441,7 @@ export default function AdminPage() {
                     <th className="text-left py-3 px-4 font-semibold text-gray-700">Hinta</th>
                     <th className="text-left py-3 px-4 font-semibold text-gray-700">Tyyppi</th>
                     <th className="text-left py-3 px-4 font-semibold text-gray-700">Arvostelu</th>
+                    <th className="text-left py-3 px-4 font-semibold text-gray-700">Etusivu</th>
                     <th className="text-right py-3 px-4 font-semibold text-gray-700">Toiminnot</th>
                   </tr>
                 </thead>
@@ -437,6 +458,17 @@ export default function AdminPage() {
                       <td className="py-3 px-4 text-gray-700">{deal.type}</td>
                       <td className="py-3 px-4">
                         <span className="text-sm font-medium">⭐ {deal.rating}</span>
+                      </td>
+                      <td className="py-3 px-4">
+                        <span
+                          className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                            deal.showOnFrontpage !== false
+                              ? 'bg-green-50 text-green-700'
+                              : 'bg-gray-100 text-gray-600'
+                          }`}
+                        >
+                          {deal.showOnFrontpage !== false ? 'Näkyy' : 'Piilotettu'}
+                        </span>
                       </td>
                       <td className="py-3 px-4">
                         <div className="flex justify-end gap-2">

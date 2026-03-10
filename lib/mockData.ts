@@ -11,6 +11,7 @@ export interface ElectricityDeal {
   rating: number
   affiliateLink: string
   logo?: string
+  showOnFrontpage?: boolean
 }
 
 // Function to get deals (checks localStorage first, falls back to mock data)
@@ -45,6 +46,7 @@ export const mockDeals: ElectricityDeal[] = [
     savings: '250 €/vuosi',
     rating: 4.8,
     affiliateLink: '#',
+    showOnFrontpage: true,
   },
   {
     id: '2',
@@ -58,6 +60,7 @@ export const mockDeals: ElectricityDeal[] = [
     savings: '220 €/vuosi',
     rating: 4.7,
     affiliateLink: '#',
+    showOnFrontpage: true,
   },
   {
     id: '3',
@@ -71,6 +74,7 @@ export const mockDeals: ElectricityDeal[] = [
     savings: '200 €/vuosi',
     rating: 4.5,
     affiliateLink: '#',
+    showOnFrontpage: true,
   },
   {
     id: '4',
@@ -84,6 +88,7 @@ export const mockDeals: ElectricityDeal[] = [
     savings: '210 €/vuosi',
     rating: 4.6,
     affiliateLink: '#',
+    showOnFrontpage: true,
   },
   {
     id: '5',
@@ -97,6 +102,7 @@ export const mockDeals: ElectricityDeal[] = [
     savings: '260 €/vuosi',
     rating: 4.9,
     affiliateLink: '#',
+    showOnFrontpage: true,
   },
   {
     id: '6',
@@ -110,6 +116,7 @@ export const mockDeals: ElectricityDeal[] = [
     savings: '190 €/vuosi',
     rating: 4.4,
     affiliateLink: '#',
+    showOnFrontpage: true,
   },
   {
     id: '7',
@@ -123,6 +130,7 @@ export const mockDeals: ElectricityDeal[] = [
     savings: '230 €/vuosi',
     rating: 4.6,
     affiliateLink: '#',
+    showOnFrontpage: true,
   },
   {
     id: '8',
@@ -136,6 +144,7 @@ export const mockDeals: ElectricityDeal[] = [
     savings: '215 €/vuosi',
     rating: 4.5,
     affiliateLink: '#',
+    showOnFrontpage: true,
   },
   {
     id: '9',
@@ -149,6 +158,7 @@ export const mockDeals: ElectricityDeal[] = [
     savings: '245 €/vuosi',
     rating: 4.7,
     affiliateLink: '#',
+    showOnFrontpage: true,
   },
   {
     id: '10',
@@ -162,5 +172,6 @@ export const mockDeals: ElectricityDeal[] = [
     savings: '185 €/vuosi',
     rating: 4.3,
     affiliateLink: '#',
+    showOnFrontpage: true,
   },
 ]
