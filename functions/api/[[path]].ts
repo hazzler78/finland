@@ -99,6 +99,61 @@ function dbRowToContact(row: any): Contact {
   }
 }
 
+const JSON_CORS_HEADERS = {
+  'Content-Type': 'application/json',
+  'Access-Control-Allow-Origin': '*',
+}
+
+function corsJson(body: unknown, status = 200): Response {
+  return new Response(JSON.stringify(body), { status, headers: JSON_CORS_HEADERS })
+}
+
+// Verify the request carries a valid admin bearer token.
+// Fails closed: if ADMIN_TOKEN is not configured, no request is authorized.
+function isAuthorized(request: any, env: any): boolean {
+  const expected = env.ADMIN_TOKEN
+  if (!expected) return false
+  const auth = request.headers.get('Authorization') || ''
+  const token = auth.startsWith('Bearer ') ? auth.slice(7).trim() : ''
+  return token.length > 0 && token === expected
+}
+
+function isNonEmptyString(value: unknown): value is string {
+  return typeof value === 'string' && value.trim().length > 0
+}
+
+function isValidEmail(email: string): boolean {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
+}
+
+// Validate a (possibly merged) deal before writing it to the database.
+// Returns an error message, or null when the input is valid.
+function validateDeal(deal: any): string | null {
+  const required = [
+    'supplier',
+    'price',
+    'basePrice',
+    'monthlyFee',
+    'type',
+    'duration',
+    'savings',
+    'affiliateLink',
+  ]
+  for (const field of required) {
+    if (!isNonEmptyString(deal[field])) {
+      return `Pakollinen kenttä puuttuu tai on virheellinen: ${field}`
+    }
+  }
+  const rating = Number(deal.rating)
+  if (!Number.isFinite(rating) || rating < 1 || rating > 5) {
+    return 'Arvostelun tulee olla luku välillä 1–5'
+  }
+  if (deal.affiliateLink !== '#' && !/^https?:\/\//i.test(deal.affiliateLink)) {
+    return 'Affiliate-linkin tulee olla kelvollinen http(s)-osoite'
+  }
+  return null
+}
+
 export async function onRequest(context: any) {
   const { request, env } = context
   const { method } = request
@@ -114,12 +169,29 @@ export async function onRequest(context: any) {
       headers: {
         'Access-Control-Allow-Origin': '*',
         'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
       },
     })
   }
 
   try {
+    // POST /api/login - Authenticate admin and issue bearer token
+    if (method === 'POST' && pathname === '/api/login') {
+      const expectedPassword = env.ADMIN_PASSWORD
+      const token = env.ADMIN_TOKEN
+
+      if (!expectedPassword || !token) {
+        return corsJson({ error: 'Admin login is not configured' }, 503)
+      }
+
+      const body = await request.json().catch(() => ({}))
+      if (body.password && body.password === expectedPassword) {
+        return corsJson({ token })
+      }
+
+      return corsJson({ error: 'Invalid credentials' }, 401)
+    }
+
     // GET /api/suppliers - Get all suppliers
     if (method === 'GET' && pathname === '/api/suppliers') {
       const result = await db.prepare('SELECT * FROM suppliers ORDER BY rating DESC, price ASC').all()
@@ -158,7 +230,16 @@ export async function onRequest(context: any) {
 
     // POST /api/suppliers - Create new supplier
     if (method === 'POST' && pathname === '/api/suppliers') {
+      if (!isAuthorized(request, env)) {
+        return corsJson({ error: 'Unauthorized' }, 401)
+      }
       const body: Omit<ElectricityDeal, 'id'> = await request.json()
+
+      const validationError = validateDeal(body)
+      if (validationError) {
+        return corsJson({ error: validationError }, 400)
+      }
+
       const id = Date.now().toString()
       const row = dealToDbRow({ ...body, id })
 
@@ -192,23 +273,26 @@ export async function onRequest(context: any) {
 
     // PUT /api/suppliers/:id - Update supplier
     if (method === 'PUT' && pathname.startsWith('/api/suppliers/')) {
+      if (!isAuthorized(request, env)) {
+        return corsJson({ error: 'Unauthorized' }, 401)
+      }
       const id = pathname.split('/').pop()
       const body: Partial<ElectricityDeal> = await request.json()
       
       // Get existing supplier
       const existing = await db.prepare('SELECT * FROM suppliers WHERE id = ?').bind(id).first()
       if (!existing) {
-        return new Response(JSON.stringify({ error: 'Not found' }), {
-          status: 404,
-          headers: { 
-            'Content-Type': 'application/json',
-            'Access-Control-Allow-Origin': '*',
-          },
-        })
+        return corsJson({ error: 'Not found' }, 404)
       }
 
-      const updated = { ...existing, ...body }
-      const row = dealToDbRow(updated as ElectricityDeal)
+      // Merge as a normalized (camelCase) deal so partial updates don't drop
+      // fields whose DB column name differs from the API field name.
+      const updated = { ...dbRowToDeal(existing as D1Supplier), ...body }
+      const validationError = validateDeal(updated)
+      if (validationError) {
+        return corsJson({ error: validationError }, 400)
+      }
+      const row = dealToDbRow(updated)
 
       await db.prepare(
         `UPDATE suppliers 
@@ -241,6 +325,9 @@ export async function onRequest(context: any) {
 
     // DELETE /api/suppliers/:id - Delete supplier
     if (method === 'DELETE' && pathname.startsWith('/api/suppliers/')) {
+      if (!isAuthorized(request, env)) {
+        return corsJson({ error: 'Unauthorized' }, 401)
+      }
       const id = pathname.split('/').pop()
       const result = await db.prepare('DELETE FROM suppliers WHERE id = ?').bind(id).run()
 
@@ -270,25 +357,29 @@ export async function onRequest(context: any) {
         const body = await request.json()
         const { name, email, subject, message } = body
 
-        if (!name || !email || !subject || !message) {
-          return new Response(JSON.stringify({ error: 'Missing required fields' }), {
-            status: 400,
-            headers: { 
-              'Content-Type': 'application/json',
-              'Access-Control-Allow-Origin': '*',
-            },
-          })
+        if (!isNonEmptyString(name) || !isNonEmptyString(email) || !isNonEmptyString(subject) || !isNonEmptyString(message)) {
+          return corsJson({ error: 'Täytä kaikki pakolliset kentät' }, 400)
         }
 
-        // Check if contacts table exists, if not return helpful error
+        if (!isValidEmail(email)) {
+          return corsJson({ error: 'Virheellinen sähköpostiosoite' }, 400)
+        }
+
+        if (name.length > 200 || email.length > 200 || subject.length > 300 || message.length > 5000) {
+          return corsJson({ error: 'Yksi tai useampi kenttä ylittää sallitun pituuden' }, 400)
+        }
+
         if (!db) {
-          return new Response(JSON.stringify({ error: 'Database not configured' }), {
-            status: 500,
-            headers: { 
-              'Content-Type': 'application/json',
-              'Access-Control-Allow-Origin': '*',
-            },
-          })
+          return corsJson({ error: 'Database not configured' }, 500)
+        }
+
+        // Basic anti-spam: at most one message per email per 30 seconds
+        const since = Math.floor(Date.now() / 1000) - 30
+        const recent = await db.prepare(
+          'SELECT COUNT(*) AS count FROM contacts WHERE email = ? AND created_at > ?'
+        ).bind(email, since).first()
+        if (recent && Number((recent as any).count) > 0) {
+          return corsJson({ error: 'Olet juuri lähettänyt viestin. Yritä hetken kuluttua uudelleen.' }, 429)
         }
 
         const id = Date.now().toString()
@@ -354,38 +445,20 @@ export async function onRequest(context: any) {
           },
         })
       } catch (dbError: any) {
-        console.error('Database error:', dbError)
-        const errorMessage = dbError.message || 'Unknown database error'
-        
-        // Check if it's a table missing error
-        if (errorMessage.includes('no such table') || errorMessage.includes('contacts')) {
-          return new Response(JSON.stringify({ 
-            error: 'Contacts table not found. Please run migration: wrangler d1 execute sahkopomo-db --file=./db/migrations/0002_add_contacts.sql',
-            details: errorMessage
-          }), {
-            status: 500,
-            headers: { 
-              'Content-Type': 'application/json',
-              'Access-Control-Allow-Origin': '*',
-            },
-          })
-        }
-        
-        return new Response(JSON.stringify({ 
-          error: 'Database error', 
-          details: errorMessage
-        }), {
-          status: 500,
-          headers: { 
-            'Content-Type': 'application/json',
-            'Access-Control-Allow-Origin': '*',
-          },
-        })
+        // Log full detail server-side; never leak internals (schema, SQL) to clients.
+        console.error('Database error (contacts POST):', dbError)
+        return corsJson(
+          { error: 'Viestin tallentaminen epäonnistui. Yritä myöhemmin uudelleen.' },
+          500
+        )
       }
     }
 
     // GET /api/contacts - Get all contacts (admin only)
     if (method === 'GET' && pathname === '/api/contacts') {
+      if (!isAuthorized(request, env)) {
+        return corsJson({ error: 'Unauthorized' }, 401)
+      }
       const result = await db.prepare('SELECT * FROM contacts ORDER BY created_at DESC').all()
       
       return new Response(JSON.stringify(result.results.map((row: any) => dbRowToContact(row))), {
@@ -398,6 +471,9 @@ export async function onRequest(context: any) {
 
     // GET /api/contacts/:id - Get single contact
     if (method === 'GET' && pathname.startsWith('/api/contacts/')) {
+      if (!isAuthorized(request, env)) {
+        return corsJson({ error: 'Unauthorized' }, 401)
+      }
       const id = pathname.split('/').pop()
       const result = await db.prepare('SELECT * FROM contacts WHERE id = ?').bind(id).first()
       
@@ -421,6 +497,9 @@ export async function onRequest(context: any) {
 
     // PUT /api/contacts/:id - Update contact (mark as read/replied)
     if (method === 'PUT' && pathname.startsWith('/api/contacts/')) {
+      if (!isAuthorized(request, env)) {
+        return corsJson({ error: 'Unauthorized' }, 401)
+      }
       const id = pathname.split('/').pop()
       const body = await request.json()
       
@@ -465,6 +544,9 @@ export async function onRequest(context: any) {
 
     // DELETE /api/contacts/:id - Delete contact
     if (method === 'DELETE' && pathname.startsWith('/api/contacts/')) {
+      if (!isAuthorized(request, env)) {
+        return corsJson({ error: 'Unauthorized' }, 401)
+      }
       const id = pathname.split('/').pop()
       const result = await db.prepare('DELETE FROM contacts WHERE id = ?').bind(id).run()
 
@@ -495,12 +577,6 @@ export async function onRequest(context: any) {
     })
   } catch (error: any) {
     console.error('API Error:', error)
-    return new Response(JSON.stringify({ error: error.message }), {
-      status: 500,
-      headers: { 
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*',
-      },
-    })
+    return corsJson({ error: 'Internal server error' }, 500)
   }
 }

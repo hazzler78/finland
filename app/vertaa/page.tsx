@@ -3,7 +3,7 @@
 import { useState, useMemo, Suspense, useEffect } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { ArrowUp, ArrowDown } from 'lucide-react'
-import DealFilters, { FilterState } from '@/components/DealFilters'
+import DealFilters, { FilterState, defaultFilterState } from '@/components/DealFilters'
 import { ElectricityDeal } from '@/lib/mockData'
 import { fetchSuppliers } from '@/lib/api'
 
@@ -13,13 +13,7 @@ function ComparisonResults() {
   const consumption = searchParams.get('kulutus') || '5000'
   const apartmentType = searchParams.get('tyyppi') || 'kerrostalo'
 
-  const [filters, setFilters] = useState<FilterState>({
-    contractType: 'all',
-    renewable: null,
-    duration: 'all',
-    minPrice: '',
-    maxPrice: '',
-  })
+  const [filters, setFilters] = useState<FilterState>(defaultFilterState)
   
   const [allDeals, setAllDeals] = useState<ElectricityDeal[]>([])
   const [loading, setLoading] = useState(true)

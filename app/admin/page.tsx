@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Plus, Edit, Trash2, Save, X, Lock, Loader2 } from 'lucide-react'
 import { ElectricityDeal } from '@/lib/mockData'
-import { fetchSuppliers, createSupplier, updateSupplier, deleteSupplier, fetchContacts, Contact } from '@/lib/api'
+import { fetchSuppliers, createSupplier, updateSupplier, deleteSupplier, fetchContacts, Contact, adminLogin, adminLogout, isAdminAuthenticated } from '@/lib/api'
 import ContactsTab from '@/components/ContactsTab'
 
 export default function AdminPage() {
@@ -21,9 +21,8 @@ export default function AdminPage() {
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    // Simple password protection (in production, use proper authentication)
-    const storedAuth = sessionStorage.getItem('admin_authenticated')
-    if (storedAuth === 'true') {
+    // Restore session if a valid admin token is already stored
+    if (isAdminAuthenticated()) {
       setIsAuthenticated(true)
       loadDeals()
       loadContacts()
@@ -37,7 +36,7 @@ export default function AdminPage() {
       const loadedDeals = await fetchSuppliers()
       setDeals(loadedDeals)
     } catch (err: any) {
-      setError('Virhe ladatessa leverantörejä: ' + err.message)
+      setError('Virhe ladattaessa sähkönmyyjiä: ' + err.message)
       console.error(err)
     } finally {
       setLoading(false)
@@ -53,22 +52,27 @@ export default function AdminPage() {
     }
   }
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
-    // Simple password check (change this password!)
-    if (password === 'admin2026') {
-      setIsAuthenticated(true)
-      sessionStorage.setItem('admin_authenticated', 'true')
-      loadDeals()
-      loadContacts()
-    } else {
-      alert('Väärä salasana')
+    setLoading(true)
+    try {
+      const success = await adminLogin(password)
+      if (success) {
+        setIsAuthenticated(true)
+        setPassword('')
+        loadDeals()
+        loadContacts()
+      } else {
+        alert('Väärä salasana')
+      }
+    } finally {
+      setLoading(false)
     }
   }
 
   const handleLogout = () => {
     setIsAuthenticated(false)
-    sessionStorage.removeItem('admin_authenticated')
+    adminLogout()
     router.push('/')
   }
 
@@ -79,7 +83,7 @@ export default function AdminPage() {
   }
 
   const handleDelete = async (id: string) => {
-    if (confirm('Haluatko varmasti poistaa tämän leverantörin?')) {
+    if (confirm('Haluatko varmasti poistaa tämän sähkönmyyjän?')) {
       setLoading(true)
       setError(null)
       try {
@@ -167,8 +171,8 @@ export default function AdminPage() {
                 placeholder="Syötä salasana"
               />
             </div>
-            <button type="submit" className="btn-primary w-full">
-              Kirjaudu sisään
+            <button type="submit" className="btn-primary w-full" disabled={loading}>
+              {loading ? 'Kirjaudutaan...' : 'Kirjaudu sisään'}
             </button>
           </form>
           <div className="mt-4 text-center">
@@ -193,7 +197,7 @@ export default function AdminPage() {
               Admin-paneeli
             </h1>
             <p className="text-gray-600">
-              Hallinnoi leverantörejä ja kontakteja
+              Hallinnoi sähkönmyyjiä ja yhteydenottoja
             </p>
           </div>
           <div className="flex gap-4">
@@ -225,7 +229,7 @@ export default function AdminPage() {
                 : 'border-transparent text-gray-600 hover:text-gray-900'
             }`}
           >
-            Leverantörit ({deals.length})
+            Sähkönmyyjät ({deals.length})
           </button>
           <button
             onClick={() => setActiveTab('contacts')}
@@ -247,13 +251,13 @@ export default function AdminPage() {
         {activeTab === 'suppliers' && (isAdding || editingId) && (
           <div className="glass-card p-6 mb-6">
             <h2 className="text-xl font-display font-bold text-gray-900 mb-4">
-              {editingId ? 'Muokkaa leverantöriä' : 'Lisää uusi leverantöri'}
+              {editingId ? 'Muokkaa sähkönmyyjää' : 'Lisää uusi sähkönmyyjä'}
             </h2>
             <form onSubmit={handleSave} className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Leverantöri *
+                    Sähkönmyyjä *
                   </label>
                   <input
                     type="text"
@@ -428,7 +432,7 @@ export default function AdminPage() {
           <div className="glass-card p-6">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-xl font-display font-bold text-gray-900">
-                Leverantörit ({deals.length})
+                Sähkönmyyjät ({deals.length})
               </h2>
               {loading && <Loader2 className="animate-spin text-primary" size={20} />}
             </div>
@@ -437,7 +441,7 @@ export default function AdminPage() {
               <table className="w-full">
                 <thead>
                   <tr className="border-b border-gray-200">
-                    <th className="text-left py-3 px-4 font-semibold text-gray-700">Leverantöri</th>
+                    <th className="text-left py-3 px-4 font-semibold text-gray-700">Sähkönmyyjä</th>
                     <th className="text-left py-3 px-4 font-semibold text-gray-700">Hinta</th>
                     <th className="text-left py-3 px-4 font-semibold text-gray-700">Tyyppi</th>
                     <th className="text-left py-3 px-4 font-semibold text-gray-700">Arvostelu</th>

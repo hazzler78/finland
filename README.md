@@ -94,9 +94,10 @@ npm run build
 │   ├── TrustBadges.tsx
 │   └── HowItWorks.tsx
 ├── lib/                   # Apufunktiot ja data
-│   └── mockData.ts       # Mock-data sähkösopimuksille
-├── hooks/                 # React hooks
-│   └── useElectricityDeals.ts
+│   ├── api.ts            # API-kutsut (suppliers, contacts, admin-login)
+│   └── mockData.ts       # Varadata sähkösopimuksille (API-fallback)
+├── functions/api/         # Cloudflare Pages Functions (REST API + D1)
+│   └── [[path]].ts
 ├── .cloudflare/           # Cloudflare Pages -konfiguraatio
 ├── wrangler.toml          # Cloudflare Workers/Pages config
 └── public/               # Staattiset tiedostot
@@ -126,7 +127,30 @@ npm run build
 
 ## API-integraatio
 
-Sivusto käyttää Cloudflare D1-databasia leverantörsdataan. API-routes finns i `functions/api/suppliers.ts`.
+Sivusto käyttää Cloudflare D1 -tietokantaa sopimusdataan. API-reitit sijaitsevat catch-all-funktiossa `functions/api/[[path]].ts` (käsittelee kaikki `/api/*`-reitit).
+
+### Ympäristömuuttujat (Cloudflare Pages)
+
+Aseta seuraavat ympäristömuuttujat Cloudflare Pages -projektin asetuksissa
+(älä koskaan committaa näitä arvoja Gitiin):
+
+| Muuttuja | Pakollinen | Kuvaus |
+| --- | --- | --- |
+| `ADMIN_PASSWORD` | Kyllä (admin) | Salasana, jolla admin kirjautuu `/admin`-sivulla. |
+| `ADMIN_TOKEN` | Kyllä (admin) | Pitkä satunnainen merkkijono. Palvelin antaa tämän tokenin onnistuneen kirjautumisen jälkeen ja vaatii sen kaikissa suojatuissa API-kutsuissa. |
+| `TELEGRAM_BOT_TOKEN` | Ei | Telegram-ilmoitukset yhteydenotoista. |
+| `TELEGRAM_CHAT_ID` | Ei | Pilkulla erotettu lista chat-ID:istä. |
+
+Aseta salaisuudet esim. komennolla:
+
+```bash
+wrangler pages secret put ADMIN_PASSWORD
+wrangler pages secret put ADMIN_TOKEN
+```
+
+> **Huom:** admin-paneeli ja suojatut API-reitit (`POST/PUT/DELETE /api/suppliers`
+> sekä kaikki `/api/contacts`-luku- ja muokkausreitit) eivät toimi ennen kuin
+> `ADMIN_PASSWORD` ja `ADMIN_TOKEN` on määritetty. Reitit ovat "fail closed".
 
 ### D1 Database Setup
 

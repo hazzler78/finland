@@ -14,14 +14,16 @@ export interface FilterState {
   maxPrice: string
 }
 
+export const defaultFilterState: FilterState = {
+  contractType: 'all',
+  renewable: null,
+  duration: 'all',
+  minPrice: '',
+  maxPrice: '',
+}
+
 export default function DealFilters({ onFilterChange }: DealFiltersProps) {
-  const [filters, setFilters] = useState<FilterState>({
-    contractType: 'all',
-    renewable: null,
-    duration: 'all',
-    minPrice: '',
-    maxPrice: '',
-  })
+  const [filters, setFilters] = useState<FilterState>(defaultFilterState)
 
   const handleFilterChange = (key: keyof FilterState, value: string | boolean | null) => {
     const newFilters = { ...filters, [key]: value }
@@ -116,15 +118,8 @@ export default function DealFilters({ onFilterChange }: DealFiltersProps) {
       
       <button
         onClick={() => {
-          const resetFilters: FilterState = {
-            contractType: 'all',
-            renewable: null,
-            duration: 'all',
-            minPrice: '',
-            maxPrice: '',
-          }
-          setFilters(resetFilters)
-          onFilterChange(resetFilters)
+          setFilters(defaultFilterState)
+          onFilterChange(defaultFilterState)
         }}
         className="w-full text-sm text-gray-600 hover:text-primary transition-colors"
       >

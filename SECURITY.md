@@ -28,6 +28,20 @@ Om din Telegram Bot Token har exponerats:
 3. BotFather ger dig en ny token
 4. Uppdatera environment variables i Cloudflare Pages med den nya tokenen
 
+## Admin-autentisering
+
+Admin-panelen (`/admin`) och de skyddade API-rutterna verifieras på servern via
+en bearer-token, inte längre med ett hårdkodat lösenord i klientkoden.
+
+- `ADMIN_PASSWORD` – lösenordet som anges i inloggningsformuläret.
+- `ADMIN_TOKEN` – en lång slumpmässig sträng som servern returnerar efter lyckad
+  inloggning och kräver i `Authorization: Bearer <token>` på skyddade anrop.
+
+Skyddade rutter: `POST/PUT/DELETE /api/suppliers` samt alla läs/skriv-rutter för
+`/api/contacts` (förutom `POST /api/contacts`, som är det publika
+kontaktformuläret). Om `ADMIN_TOKEN` saknas avvisas alla skyddade anrop ("fail
+closed"). Sätt aldrig dessa värden i koden – använd environment variables.
+
 ## Best Practices
 
 - Använd alltid environment variables för känsliga värden

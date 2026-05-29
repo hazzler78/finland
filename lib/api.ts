@@ -4,6 +4,52 @@ const API_BASE = typeof window !== 'undefined'
   ? window.location.origin 
   : 'https://sahkopomo.pages.dev'
 
+const ADMIN_TOKEN_KEY = 'admin_token'
+
+// Authenticate against the server using the admin password.
+// On success the issued bearer token is stored for subsequent admin requests.
+export async function adminLogin(password: string): Promise<boolean> {
+  try {
+    const response = await fetch(`${API_BASE}/api/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password }),
+    })
+
+    if (!response.ok) {
+      return false
+    }
+
+    const data = await response.json()
+    if (data?.token && typeof window !== 'undefined') {
+      sessionStorage.setItem(ADMIN_TOKEN_KEY, data.token)
+      return true
+    }
+
+    return false
+  } catch (error) {
+    console.error('Login error:', error)
+    return false
+  }
+}
+
+export function adminLogout(): void {
+  if (typeof window !== 'undefined') {
+    sessionStorage.removeItem(ADMIN_TOKEN_KEY)
+  }
+}
+
+export function isAdminAuthenticated(): boolean {
+  return typeof window !== 'undefined' && Boolean(sessionStorage.getItem(ADMIN_TOKEN_KEY))
+}
+
+// Authorization header for admin-only requests (empty when not logged in).
+function authHeaders(): Record<string, string> {
+  if (typeof window === 'undefined') return {}
+  const token = sessionStorage.getItem(ADMIN_TOKEN_KEY)
+  return token ? { Authorization: `Bearer ${token}` } : {}
+}
+
 // Fetch all suppliers from API
 export async function fetchSuppliers(): Promise<ElectricityDeal[]> {
   try {
@@ -40,6 +86,7 @@ export async function createSupplier(deal: Omit<ElectricityDeal, 'id'>): Promise
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
+      ...authHeaders(),
     },
     body: JSON.stringify(deal),
   })
@@ -57,6 +104,7 @@ export async function updateSupplier(id: string, updates: Partial<ElectricityDea
     method: 'PUT',
     headers: {
       'Content-Type': 'application/json',
+      ...authHeaders(),
     },
     body: JSON.stringify(updates),
   })
@@ -72,6 +120,7 @@ export async function updateSupplier(id: string, updates: Partial<ElectricityDea
 export async function deleteSupplier(id: string): Promise<boolean> {
   const response = await fetch(`${API_BASE}/api/suppliers/${id}`, {
     method: 'DELETE',
+    headers: authHeaders(),
   })
 
   return response.ok
@@ -119,7 +168,9 @@ export async function createContact(contact: Omit<Contact, 'id' | 'created_at' |
 // Fetch all contacts
 export async function fetchContacts(): Promise<Contact[]> {
   try {
-    const response = await fetch(`${API_BASE}/api/contacts`)
+    const response = await fetch(`${API_BASE}/api/contacts`, {
+      headers: authHeaders(),
+    })
     if (!response.ok) {
       throw new Error('Failed to fetch contacts')
     }
@@ -133,7 +184,9 @@ export async function fetchContacts(): Promise<Contact[]> {
 // Fetch single contact
 export async function fetchContact(id: string): Promise<Contact | null> {
   try {
-    const response = await fetch(`${API_BASE}/api/contacts/${id}`)
+    const response = await fetch(`${API_BASE}/api/contacts/${id}`, {
+      headers: authHeaders(),
+    })
     if (!response.ok) {
       return null
     }
@@ -150,6 +203,7 @@ export async function updateContact(id: string, updates: { read?: boolean; repli
     method: 'PUT',
     headers: {
       'Content-Type': 'application/json',
+      ...authHeaders(),
     },
     body: JSON.stringify(updates),
   })
@@ -165,6 +219,7 @@ export async function updateContact(id: string, updates: { read?: boolean; repli
 export async function deleteContact(id: string): Promise<boolean> {
   const response = await fetch(`${API_BASE}/api/contacts/${id}`, {
     method: 'DELETE',
+    headers: authHeaders(),
   })
 
   return response.ok
