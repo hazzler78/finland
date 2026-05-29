@@ -20,6 +20,10 @@ CREATE TABLE IF NOT EXISTS suppliers (
   affiliate_link TEXT NOT NULL,
   logo TEXT,
   show_on_frontpage INTEGER NOT NULL DEFAULT 1,
+  -- Canonical numeric values; the string columns above are derived from these.
+  price_value REAL,
+  monthly_fee_value REAL,
+  savings_value REAL,
   created_at INTEGER DEFAULT (unixepoch()),
   updated_at INTEGER DEFAULT (unixepoch())
 );

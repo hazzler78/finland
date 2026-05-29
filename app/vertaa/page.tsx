@@ -6,6 +6,7 @@ import { ArrowUp, ArrowDown } from 'lucide-react'
 import DealFilters, { FilterState, defaultFilterState } from '@/components/DealFilters'
 import { ElectricityDeal } from '@/lib/mockData'
 import { fetchSuppliers } from '@/lib/api'
+import { dealPriceSnt, dealMonthlyFeeEur, dealSavingsEur } from '@/lib/format'
 
 function ComparisonResults() {
   const searchParams = useSearchParams()
@@ -56,11 +57,11 @@ function ComparisonResults() {
     }
 
     if (filters.minPrice) {
-      filtered = filtered.filter(deal => parseFloat(deal.price.replace(',', '.')) >= parseFloat(filters.minPrice))
+      filtered = filtered.filter(deal => dealPriceSnt(deal) >= parseFloat(filters.minPrice))
     }
 
     if (filters.maxPrice) {
-      filtered = filtered.filter(deal => parseFloat(deal.price.replace(',', '.')) <= parseFloat(filters.maxPrice))
+      filtered = filtered.filter(deal => dealPriceSnt(deal) <= parseFloat(filters.maxPrice))
     }
 
     // Apply sorting
@@ -68,13 +69,9 @@ function ComparisonResults() {
       let comparison = 0
       
       if (sortBy === 'price') {
-        const priceA = parseFloat(a.price.replace(',', '.'))
-        const priceB = parseFloat(b.price.replace(',', '.'))
-        comparison = priceA - priceB
+        comparison = dealPriceSnt(a) - dealPriceSnt(b)
       } else if (sortBy === 'savings') {
-        const savingsA = parseFloat(a.savings.replace(/[^\d,]/g, '').replace(',', '.'))
-        const savingsB = parseFloat(b.savings.replace(/[^\d,]/g, '').replace(',', '.'))
-        comparison = savingsB - savingsA // Higher savings first
+        comparison = dealSavingsEur(b) - dealSavingsEur(a) // Higher savings first
       } else if (sortBy === 'rating') {
         comparison = b.rating - a.rating
       }
@@ -95,10 +92,10 @@ function ComparisonResults() {
   }
 
   const calculateMonthlyEstimate = (deal: ElectricityDeal) => {
-    const pricePerKwh = parseFloat(deal.price.replace(',', '.'))
+    const pricePerKwh = dealPriceSnt(deal)
     const monthlyConsumption = parseFloat(consumption) / 12
     const energyCost = (monthlyConsumption * pricePerKwh) / 100
-    const monthlyFee = parseFloat(deal.monthlyFee.replace(/[^\d,]/g, '').replace(',', '.'))
+    const monthlyFee = dealMonthlyFeeEur(deal)
     return (energyCost + monthlyFee).toFixed(2)
   }
 

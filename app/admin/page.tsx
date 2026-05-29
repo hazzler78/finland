@@ -133,13 +133,12 @@ export default function AdminPage() {
     setEditingId(null)
     setFormData({
       supplier: '',
-      price: '',
-      basePrice: '',
-      monthlyFee: '',
+      priceValue: undefined,
+      monthlyFeeValue: undefined,
+      savingsValue: undefined,
       type: 'Kiinteä',
       duration: '12 kk',
       renewable: false,
-      savings: '',
       rating: 4.0,
       affiliateLink: '',
       showOnFrontpage: true,
@@ -273,33 +272,40 @@ export default function AdminPage() {
                     Hinta (snt/kWh) *
                   </label>
                   <input
-                    type="text"
-                    value={formData.price || ''}
-                    onChange={(e) => {
-                      const price = e.target.value
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={formData.priceValue ?? ''}
+                    onChange={(e) =>
                       setFormData({
                         ...formData,
-                        price,
-                        basePrice: `${price} snt/kWh`,
+                        priceValue: e.target.value === '' ? undefined : parseFloat(e.target.value),
                       })
-                    }}
+                    }
                     className="input-field"
                     required
-                    placeholder="6,99"
+                    placeholder="6.99"
                   />
                 </div>
                 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Perusmaksu *
+                    Perusmaksu (€/kk) *
                   </label>
                   <input
-                    type="text"
-                    value={formData.monthlyFee || ''}
-                    onChange={(e) => setFormData({ ...formData, monthlyFee: e.target.value })}
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={formData.monthlyFeeValue ?? ''}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        monthlyFeeValue: e.target.value === '' ? undefined : parseFloat(e.target.value),
+                      })
+                    }
                     className="input-field"
                     required
-                    placeholder="3,90 €/kk"
+                    placeholder="3.90"
                   />
                 </div>
                 
@@ -334,15 +340,22 @@ export default function AdminPage() {
                 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Säästöarvio *
+                    Säästöarvio (€/vuosi) *
                   </label>
                   <input
-                    type="text"
-                    value={formData.savings || ''}
-                    onChange={(e) => setFormData({ ...formData, savings: e.target.value })}
+                    type="number"
+                    step="1"
+                    min="0"
+                    value={formData.savingsValue ?? ''}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        savingsValue: e.target.value === '' ? undefined : parseFloat(e.target.value),
+                      })
+                    }
                     className="input-field"
                     required
-                    placeholder="250 €/vuosi"
+                    placeholder="250"
                   />
                 </div>
                 

@@ -15,6 +15,9 @@ interface ElectricityDeal {
   affiliateLink: string
   logo?: string
   showOnFrontpage?: boolean
+  priceValue?: number
+  monthlyFeeValue?: number
+  savingsValue?: number
 }
 
 interface D1Supplier {
@@ -31,6 +34,9 @@ interface D1Supplier {
   affiliate_link: string
   logo?: string | null
   show_on_frontpage?: number
+  price_value?: number | null
+  monthly_fee_value?: number | null
+  savings_value?: number | null
   created_at?: number
   updated_at?: number
 }
@@ -46,43 +52,73 @@ interface Contact {
   created_at?: number
 }
 
-// Convert D1 row to ElectricityDeal
+// Resolve the canonical numeric value of a deal, preferring the stored numeric
+// field and falling back to parsing the legacy display string.
+function resolveDealNumbers(source: any) {
+  const price =
+    typeof source.priceValue === 'number' ? source.priceValue : parseFiNumber(source.price)
+  const monthlyFee =
+    typeof source.monthly_fee_value === 'number'
+      ? source.monthly_fee_value
+      : typeof source.monthlyFeeValue === 'number'
+      ? source.monthlyFeeValue
+      : parseFiNumber(source.monthly_fee ?? source.monthlyFee)
+  const savings =
+    typeof source.savings_value === 'number'
+      ? source.savings_value
+      : typeof source.savingsValue === 'number'
+      ? source.savingsValue
+      : parseFiNumber(source.savings)
+  const priceValue =
+    typeof source.price_value === 'number' ? source.price_value : price
+  return { priceValue, monthlyFee, savings }
+}
+
+// Convert D1 row to ElectricityDeal (display strings regenerated from numbers).
 function dbRowToDeal(row: D1Supplier): ElectricityDeal {
+  const { priceValue, monthlyFee, savings } = resolveDealNumbers(row)
   return {
     id: row.id,
     supplier: row.supplier,
-    price: row.price,
-    basePrice: row.base_price,
-    monthlyFee: row.monthly_fee,
+    price: Number.isFinite(priceValue) ? formatFi(priceValue, 2) : row.price,
+    basePrice: Number.isFinite(priceValue) ? `${formatFi(priceValue, 2)} snt/kWh` : row.base_price,
+    monthlyFee: Number.isFinite(monthlyFee) ? `${formatFi(monthlyFee, 2)} €/kk` : row.monthly_fee,
     type: row.type,
     duration: row.duration,
     renewable: Boolean(row.renewable),
-    savings: row.savings,
+    savings: Number.isFinite(savings) ? `${formatFi(savings, 0)} €/vuosi` : row.savings,
     rating: row.rating,
     affiliateLink: row.affiliate_link,
     logo: row.logo || undefined,
     showOnFrontpage: row.show_on_frontpage !== undefined ? Boolean(row.show_on_frontpage) : true,
+    priceValue: Number.isFinite(priceValue) ? priceValue : undefined,
+    monthlyFeeValue: Number.isFinite(monthlyFee) ? monthlyFee : undefined,
+    savingsValue: Number.isFinite(savings) ? savings : undefined,
   }
 }
 
-// Convert ElectricityDeal to D1 insert format
+// Convert ElectricityDeal to D1 insert format (stores numbers + derived strings).
 function dealToDbRow(
   deal: Omit<ElectricityDeal, 'id'> & { id?: string }
 ): Omit<D1Supplier, 'created_at' | 'updated_at'> {
+  const { priceValue, monthlyFee, savings } = resolveDealNumbers(deal)
   return {
     id: deal.id || Date.now().toString(),
     supplier: deal.supplier,
-    price: deal.price,
-    base_price: deal.basePrice,
-    monthly_fee: deal.monthlyFee,
+    price: formatFi(priceValue, 2),
+    base_price: `${formatFi(priceValue, 2)} snt/kWh`,
+    monthly_fee: `${formatFi(monthlyFee, 2)} €/kk`,
     type: deal.type,
     duration: deal.duration,
     renewable: deal.renewable ? 1 : 0,
-    savings: deal.savings,
+    savings: `${formatFi(savings, 0)} €/vuosi`,
     rating: deal.rating,
     affiliate_link: deal.affiliateLink,
     logo: deal.logo || null,
     show_on_frontpage: deal.showOnFrontpage === false ? 0 : 1,
+    price_value: priceValue,
+    monthly_fee_value: monthlyFee,
+    savings_value: savings,
   }
 }
 
@@ -108,6 +144,21 @@ function corsJson(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), { status, headers: JSON_CORS_HEADERS })
 }
 
+// Numeric values are canonical; display strings are derived from them.
+// (Mirrors lib/format.ts — duplicated because Pages Functions are bundled
+// separately from the Next app and cannot import via the "@/" alias.)
+function parseFiNumber(value: unknown): number {
+  if (typeof value === 'number') return value
+  if (typeof value !== 'string') return NaN
+  const cleaned = value.replace(/[^\d,.-]/g, '').replace(',', '.')
+  return parseFloat(cleaned)
+}
+
+function formatFi(value: number, decimals: number): string {
+  if (!Number.isFinite(value)) return ''
+  return value.toFixed(decimals).replace('.', ',')
+}
+
 // Verify the request carries a valid admin bearer token.
 // Fails closed: if ADMIN_TOKEN is not configured, no request is authorized.
 function isAuthorized(request: any, env: any): boolean {
@@ -129,21 +180,24 @@ function isValidEmail(email: string): boolean {
 // Validate a (possibly merged) deal before writing it to the database.
 // Returns an error message, or null when the input is valid.
 function validateDeal(deal: any): string | null {
-  const required = [
-    'supplier',
-    'price',
-    'basePrice',
-    'monthlyFee',
-    'type',
-    'duration',
-    'savings',
-    'affiliateLink',
-  ]
-  for (const field of required) {
+  const requiredStrings = ['supplier', 'type', 'duration', 'affiliateLink']
+  for (const field of requiredStrings) {
     if (!isNonEmptyString(deal[field])) {
       return `Pakollinen kenttä puuttuu tai on virheellinen: ${field}`
     }
   }
+
+  const { priceValue, monthlyFee, savings } = resolveDealNumbers(deal)
+  if (!Number.isFinite(priceValue) || priceValue < 0) {
+    return 'Hinnan tulee olla kelvollinen, ei-negatiivinen luku'
+  }
+  if (!Number.isFinite(monthlyFee) || monthlyFee < 0) {
+    return 'Perusmaksun tulee olla kelvollinen, ei-negatiivinen luku'
+  }
+  if (!Number.isFinite(savings) || savings < 0) {
+    return 'Säästöarvion tulee olla kelvollinen, ei-negatiivinen luku'
+  }
+
   const rating = Number(deal.rating)
   if (!Number.isFinite(rating) || rating < 1 || rating > 5) {
     return 'Arvostelun tulee olla luku välillä 1–5'
@@ -194,7 +248,7 @@ export async function onRequest(context: any) {
 
     // GET /api/suppliers - Get all suppliers
     if (method === 'GET' && pathname === '/api/suppliers') {
-      const result = await db.prepare('SELECT * FROM suppliers ORDER BY rating DESC, price ASC').all()
+      const result = await db.prepare('SELECT * FROM suppliers ORDER BY rating DESC, price_value ASC').all()
       const deals = result.results.map((row: any) => dbRowToDeal(row))
       
       return new Response(JSON.stringify(deals), {
@@ -244,8 +298,8 @@ export async function onRequest(context: any) {
       const row = dealToDbRow({ ...body, id })
 
       await db.prepare(
-        `INSERT INTO suppliers (id, supplier, price, base_price, monthly_fee, type, duration, renewable, savings, rating, affiliate_link, logo, show_on_frontpage, created_at, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, unixepoch(), unixepoch())`
+        `INSERT INTO suppliers (id, supplier, price, base_price, monthly_fee, type, duration, renewable, savings, rating, affiliate_link, logo, show_on_frontpage, price_value, monthly_fee_value, savings_value, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, unixepoch(), unixepoch())`
       ).bind(
         row.id,
         row.supplier,
@@ -259,7 +313,10 @@ export async function onRequest(context: any) {
         row.rating,
         row.affiliate_link,
         row.logo,
-        row.show_on_frontpage ?? 1
+        row.show_on_frontpage ?? 1,
+        row.price_value,
+        row.monthly_fee_value,
+        row.savings_value
       ).run()
 
       return new Response(JSON.stringify({ id, ...body }), {
@@ -297,7 +354,8 @@ export async function onRequest(context: any) {
       await db.prepare(
         `UPDATE suppliers 
          SET supplier = ?, price = ?, base_price = ?, monthly_fee = ?, type = ?, duration = ?, 
-             renewable = ?, savings = ?, rating = ?, affiliate_link = ?, logo = ?, show_on_frontpage = ?, updated_at = unixepoch()
+             renewable = ?, savings = ?, rating = ?, affiliate_link = ?, logo = ?, show_on_frontpage = ?,
+             price_value = ?, monthly_fee_value = ?, savings_value = ?, updated_at = unixepoch()
          WHERE id = ?`
       ).bind(
         row.supplier,
@@ -312,6 +370,9 @@ export async function onRequest(context: any) {
         row.affiliate_link,
         row.logo,
         row.show_on_frontpage ?? 1,
+        row.price_value,
+        row.monthly_fee_value,
+        row.savings_value,
         id
       ).run()
 
