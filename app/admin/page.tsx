@@ -6,6 +6,7 @@ import { Plus, Edit, Trash2, Save, X, Lock, Loader2 } from 'lucide-react'
 import { ElectricityDeal } from '@/lib/mockData'
 import { fetchSuppliers, createSupplier, updateSupplier, deleteSupplier, fetchContacts, Contact, adminLogin, adminLogout, isAdminAuthenticated } from '@/lib/api'
 import ContactsTab from '@/components/ContactsTab'
+import { contractTypeLabel } from '@/lib/adminLabels'
 
 export default function AdminPage() {
   const router = useRouter()
@@ -36,7 +37,7 @@ export default function AdminPage() {
       const loadedDeals = await fetchSuppliers()
       setDeals(loadedDeals)
     } catch (err: any) {
-      setError('Virhe ladattaessa sähkönmyyjiä: ' + err.message)
+      setError('Feil ved lasting av strømleverandører: ' + err.message)
       console.error(err)
     } finally {
       setLoading(false)
@@ -63,7 +64,7 @@ export default function AdminPage() {
         loadDeals()
         loadContacts()
       } else {
-        alert('Väärä salasana')
+        alert('Feil passord')
       }
     } finally {
       setLoading(false)
@@ -83,14 +84,14 @@ export default function AdminPage() {
   }
 
   const handleDelete = async (id: string) => {
-    if (confirm('Haluatko varmasti poistaa tämän sähkönmyyjän?')) {
+    if (confirm('Er du sikker på at du vil slette denne strømleverandøren?')) {
       setLoading(true)
       setError(null)
       try {
         await deleteSupplier(id)
         await loadDeals()
       } catch (err: any) {
-        setError('Virhe poistettaessa: ' + err.message)
+        setError('Feil ved sletting: ' + err.message)
         console.error(err)
       } finally {
         setLoading(false)
@@ -115,7 +116,7 @@ export default function AdminPage() {
       setFormData({})
       await loadDeals()
     } catch (err: any) {
-      setError('Virhe tallennettaessa: ' + err.message)
+      setError('Feil ved lagring: ' + err.message)
       console.error(err)
     } finally {
       setLoading(false)
@@ -153,12 +154,12 @@ export default function AdminPage() {
             <Lock size={48} className="text-primary" />
           </div>
           <h1 className="text-2xl font-display font-bold text-gray-900 mb-6 text-center">
-            Admin-kirjautuminen
+            Admin-innlogging
           </h1>
           <form onSubmit={handleLogin} className="space-y-4">
             <div>
               <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
-                Salasana
+                Passord
               </label>
               <input
                 type="password"
@@ -167,11 +168,11 @@ export default function AdminPage() {
                 onChange={(e) => setPassword(e.target.value)}
                 className="input-field"
                 required
-                placeholder="Syötä salasana"
+                placeholder="Skriv inn passord"
               />
             </div>
             <button type="submit" className="btn-primary w-full" disabled={loading}>
-              {loading ? 'Kirjaudutaan...' : 'Kirjaudu sisään'}
+              {loading ? 'Logger inn …' : 'Logg inn'}
             </button>
           </form>
           <div className="mt-4 text-center">
@@ -179,7 +180,7 @@ export default function AdminPage() {
               onClick={() => router.push('/')}
               className="text-sm text-gray-600 hover:text-primary"
             >
-              Takaisin etusivulle
+              Tilbake til forsiden
             </button>
           </div>
         </div>
@@ -193,10 +194,10 @@ export default function AdminPage() {
         <div className="flex justify-between items-center mb-8">
           <div>
             <h1 className="text-3xl md:text-4xl font-display font-bold text-gray-900 mb-2">
-              Admin-paneeli
+              Adminpanel
             </h1>
             <p className="text-gray-600">
-              Hallinnoi sähkönmyyjiä ja yhteydenottoja
+              Administrer strømleverandører og henvendelser
             </p>
           </div>
           <div className="flex gap-4">
@@ -206,14 +207,14 @@ export default function AdminPage() {
                 className="btn-primary flex items-center gap-2"
               >
                 <Plus size={20} />
-                Lisää uusi
+                Legg til ny
               </button>
             )}
             <button
               onClick={handleLogout}
               className="px-4 py-2 border border-gray-300 rounded-xl text-gray-700 hover:bg-gray-50 transition-colors"
             >
-              Kirjaudu ulos
+              Logg ut
             </button>
           </div>
         </div>
@@ -228,7 +229,7 @@ export default function AdminPage() {
                 : 'border-transparent text-gray-600 hover:text-gray-900'
             }`}
           >
-            Sähkönmyyjät ({deals.length})
+            Strømleverandører ({deals.length})
           </button>
           <button
             onClick={() => setActiveTab('contacts')}
@@ -238,7 +239,7 @@ export default function AdminPage() {
                 : 'border-transparent text-gray-600 hover:text-gray-900'
             }`}
           >
-            Yhteydenotot ({contacts.length})
+            Henvendelser ({contacts.length})
             {contacts.filter(c => !c.read).length > 0 && (
               <span className="absolute top-1 right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
                 {contacts.filter(c => !c.read).length}
@@ -250,13 +251,13 @@ export default function AdminPage() {
         {activeTab === 'suppliers' && (isAdding || editingId) && (
           <div className="glass-card p-6 mb-6">
             <h2 className="text-xl font-display font-bold text-gray-900 mb-4">
-              {editingId ? 'Muokkaa sähkönmyyjää' : 'Lisää uusi sähkönmyyjä'}
+              {editingId ? 'Rediger strømleverandør' : 'Legg til ny strømleverandør'}
             </h2>
             <form onSubmit={handleSave} className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Sähkönmyyjä *
+                    Strømleverandør *
                   </label>
                   <input
                     type="text"
@@ -269,7 +270,7 @@ export default function AdminPage() {
                 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Hinta (snt/kWh) *
+                    Pris (øre/kWh) *
                   </label>
                   <input
                     type="number"
@@ -290,7 +291,7 @@ export default function AdminPage() {
                 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Perusmaksu (€/kk) *
+                    Grunnavgift (€/mnd) *
                   </label>
                   <input
                     type="number"
@@ -311,7 +312,7 @@ export default function AdminPage() {
                 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Sopimuksen tyyppi *
+                    Avtaletype *
                   </label>
                   <select
                     value={formData.type || 'Kiinteä'}
@@ -319,14 +320,14 @@ export default function AdminPage() {
                     className="input-field"
                     required
                   >
-                    <option value="Kiinteä">Kiinteä</option>
-                    <option value="Pörssisähkö">Pörssisähkö</option>
+                    <option value="Kiinteä">Fastpris</option>
+                    <option value="Pörssisähkö">Spotpris</option>
                   </select>
                 </div>
                 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Kesto *
+                    Varighet *
                   </label>
                   <input
                     type="text"
@@ -340,7 +341,7 @@ export default function AdminPage() {
                 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Säästöarvio (€/vuosi) *
+                    Spareestimat (€/år) *
                   </label>
                   <input
                     type="number"
@@ -361,7 +362,7 @@ export default function AdminPage() {
                 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Arvostelu (1-5) *
+                    Vurdering (1–5) *
                   </label>
                   <input
                     type="number"
@@ -377,7 +378,7 @@ export default function AdminPage() {
                 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Affiliate-linkki *
+                    Affiliate-lenke *
                   </label>
                   <input
                     type="url"
@@ -398,7 +399,7 @@ export default function AdminPage() {
                       className="w-4 h-4 text-primary border-gray-300 rounded focus:ring-primary"
                     />
                     <span className="text-sm font-medium text-gray-700">
-                      Uusiutuva energia
+                      Fornybar energi
                     </span>
                   </label>
                 </div>
@@ -417,7 +418,7 @@ export default function AdminPage() {
                       className="w-4 h-4 text-primary border-gray-300 rounded focus:ring-primary"
                     />
                     <span className="text-sm font-medium text-gray-700">
-                      Näytä etusivun "Suosituimmat" -listassa
+                      Vis på forsiden i listen «Mest populære»
                     </span>
                   </label>
                 </div>
@@ -426,7 +427,7 @@ export default function AdminPage() {
               <div className="flex gap-4">
                 <button type="submit" className="btn-primary flex items-center gap-2">
                   <Save size={20} />
-                  Tallenna
+                  Lagre
                 </button>
                 <button
                   type="button"
@@ -434,7 +435,7 @@ export default function AdminPage() {
                   className="px-4 py-2 border border-gray-300 rounded-xl text-gray-700 hover:bg-gray-50 transition-colors flex items-center gap-2"
                 >
                   <X size={20} />
-                  Peruuta
+                  Avbryt
                 </button>
               </div>
             </form>
@@ -445,7 +446,7 @@ export default function AdminPage() {
           <div className="glass-card p-6">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-xl font-display font-bold text-gray-900">
-                Sähkönmyyjät ({deals.length})
+                Strømleverandører ({deals.length})
               </h2>
               {loading && <Loader2 className="animate-spin text-primary" size={20} />}
             </div>
@@ -454,12 +455,12 @@ export default function AdminPage() {
               <table className="w-full">
                 <thead>
                   <tr className="border-b border-gray-200">
-                    <th className="text-left py-3 px-4 font-semibold text-gray-700">Sähkönmyyjä</th>
-                    <th className="text-left py-3 px-4 font-semibold text-gray-700">Hinta</th>
-                    <th className="text-left py-3 px-4 font-semibold text-gray-700">Tyyppi</th>
-                    <th className="text-left py-3 px-4 font-semibold text-gray-700">Arvostelu</th>
-                    <th className="text-left py-3 px-4 font-semibold text-gray-700">Etusivu</th>
-                    <th className="text-right py-3 px-4 font-semibold text-gray-700">Toiminnot</th>
+                    <th className="text-left py-3 px-4 font-semibold text-gray-700">Strømleverandør</th>
+                    <th className="text-left py-3 px-4 font-semibold text-gray-700">Pris</th>
+                    <th className="text-left py-3 px-4 font-semibold text-gray-700">Type</th>
+                    <th className="text-left py-3 px-4 font-semibold text-gray-700">Vurdering</th>
+                    <th className="text-left py-3 px-4 font-semibold text-gray-700">Forside</th>
+                    <th className="text-right py-3 px-4 font-semibold text-gray-700">Handlinger</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -468,11 +469,11 @@ export default function AdminPage() {
                       <td className="py-3 px-4">
                         <div className="font-medium text-gray-900">{deal.supplier}</div>
                         {deal.renewable && (
-                          <span className="text-xs text-primary">Uusiutuva</span>
+                          <span className="text-xs text-primary">Fornybar</span>
                         )}
                       </td>
                       <td className="py-3 px-4 text-gray-700">{deal.basePrice}</td>
-                      <td className="py-3 px-4 text-gray-700">{deal.type}</td>
+                      <td className="py-3 px-4 text-gray-700">{contractTypeLabel(deal.type)}</td>
                       <td className="py-3 px-4">
                         <span className="text-sm font-medium">⭐ {deal.rating}</span>
                       </td>
@@ -484,7 +485,7 @@ export default function AdminPage() {
                               : 'bg-gray-100 text-gray-600'
                           }`}
                         >
-                          {deal.showOnFrontpage !== false ? 'Näkyy' : 'Piilotettu'}
+                          {deal.showOnFrontpage !== false ? 'Synlig' : 'Skjult'}
                         </span>
                       </td>
                       <td className="py-3 px-4">
@@ -492,14 +493,14 @@ export default function AdminPage() {
                           <button
                             onClick={() => handleEdit(deal)}
                             className="p-2 text-primary hover:bg-primary/10 rounded-lg transition-colors"
-                            title="Muokkaa"
+                            title="Rediger"
                           >
                             <Edit size={18} />
                           </button>
                           <button
                             onClick={() => handleDelete(deal.id)}
                             className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                            title="Poista"
+                            title="Slett"
                           >
                             <Trash2 size={18} />
                           </button>

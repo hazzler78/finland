@@ -39,7 +39,7 @@ export default function ContactsTab({ contacts, onRefresh, loading }: ContactsTa
   }
 
   const handleDelete = async (id: string) => {
-    if (confirm('Haluatko varmasti poistaa tämän yhteydenoton?')) {
+    if (confirm('Er du sikker på at du vil slette denne henvendelsen?')) {
       setUpdating(id)
       try {
         await deleteContact(id)
@@ -56,7 +56,7 @@ export default function ContactsTab({ contacts, onRefresh, loading }: ContactsTa
   }
 
   const formatDate = (timestamp: number) => {
-    return new Date(timestamp * 1000).toLocaleString('fi-FI', {
+    return new Date(timestamp * 1000).toLocaleString('nb-NO', {
       year: 'numeric',
       month: 'long',
       day: 'numeric',
@@ -74,11 +74,11 @@ export default function ContactsTab({ contacts, onRefresh, loading }: ContactsTa
         <div className="glass-card p-6">
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-xl font-display font-bold text-gray-900">
-              Yhteydenotot ({contacts.length})
+              Henvendelser ({contacts.length})
             </h2>
             {unreadCount > 0 && (
               <span className="bg-red-500 text-white text-xs font-semibold px-2 py-1 rounded-full">
-                {unreadCount} uutta
+                {unreadCount} nye
               </span>
             )}
           </div>
@@ -86,7 +86,7 @@ export default function ContactsTab({ contacts, onRefresh, loading }: ContactsTa
           <div className="space-y-2 max-h-[600px] overflow-y-auto">
             {contacts.length === 0 ? (
               <p className="text-gray-500 text-sm text-center py-8">
-                Ei yhteydenottoja
+                Ingen henvendelser
               </p>
             ) : (
               contacts.map((contact) => (
@@ -123,7 +123,7 @@ export default function ContactsTab({ contacts, onRefresh, loading }: ContactsTa
                   <div className="flex gap-2 mt-2">
                     {contact.replied && (
                       <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded">
-                        Vastattu
+                        Besvart
                       </span>
                     )}
                   </div>
@@ -144,9 +144,9 @@ export default function ContactsTab({ contacts, onRefresh, loading }: ContactsTa
                   {selectedContact.subject}
                 </h2>
                 <div className="text-sm text-gray-600">
-                  <div>Nimi: {selectedContact.name}</div>
-                  <div>Sähköposti: <a href={`mailto:${selectedContact.email}`} className="text-primary hover:underline">{selectedContact.email}</a></div>
-                  <div>Päivämäärä: {formatDate(selectedContact.created_at)}</div>
+                  <div>Navn: {selectedContact.name}</div>
+                  <div>E-post: <a href={`mailto:${selectedContact.email}`} className="text-primary hover:underline">{selectedContact.email}</a></div>
+                  <div>Dato: {formatDate(selectedContact.created_at)}</div>
                 </div>
               </div>
               <div className="flex gap-2">
@@ -155,7 +155,7 @@ export default function ContactsTab({ contacts, onRefresh, loading }: ContactsTa
                     onClick={() => handleMarkRead(selectedContact.id, true)}
                     disabled={updating === selectedContact.id}
                     className="p-2 text-primary hover:bg-primary/10 rounded-lg transition-colors"
-                    title="Merkitse luetuksi"
+                    title="Merk som lest"
                   >
                     <CheckCircle size={20} />
                   </button>
@@ -165,7 +165,7 @@ export default function ContactsTab({ contacts, onRefresh, loading }: ContactsTa
                     onClick={() => handleMarkReplied(selectedContact.id, true)}
                     disabled={updating === selectedContact.id}
                     className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
-                    title="Merkitse vastatuksi"
+                    title="Merk som besvart"
                   >
                     <Reply size={20} />
                   </button>
@@ -174,7 +174,7 @@ export default function ContactsTab({ contacts, onRefresh, loading }: ContactsTa
                   onClick={() => handleDelete(selectedContact.id)}
                   disabled={updating === selectedContact.id}
                   className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                  title="Poista"
+                  title="Slett"
                 >
                   <Trash2 size={20} />
                 </button>
@@ -182,7 +182,7 @@ export default function ContactsTab({ contacts, onRefresh, loading }: ContactsTa
             </div>
 
             <div className="border-t border-gray-200 pt-6">
-              <h3 className="font-semibold text-gray-900 mb-3">Viesti:</h3>
+              <h3 className="font-semibold text-gray-900 mb-3">Melding:</h3>
               <div className="bg-gray-50 rounded-lg p-4 text-gray-700 whitespace-pre-wrap">
                 {selectedContact.message}
               </div>
@@ -194,7 +194,7 @@ export default function ContactsTab({ contacts, onRefresh, loading }: ContactsTa
                 className="btn-primary flex items-center gap-2"
               >
                 <Mail size={18} />
-                Vastaa sähköpostilla
+                Svar på e-post
               </a>
             </div>
           </div>
@@ -202,7 +202,7 @@ export default function ContactsTab({ contacts, onRefresh, loading }: ContactsTa
           <div className="glass-card p-12 text-center">
             <Mail size={48} className="text-gray-300 mx-auto mb-4" />
             <p className="text-gray-600">
-              Valitse yhteydenotto vasemmalta nähdäksesi tiedot
+              Velg en henvendelse til venstre for å se detaljene
             </p>
           </div>
         )}
