@@ -3,6 +3,8 @@
 import { useState } from 'react'
 import { Mail, Trash2, CheckCircle, Circle, Reply } from 'lucide-react'
 import { Contact, updateContact, deleteContact } from '@/lib/api'
+import { adminDateLocale } from '@/lib/adminI18n'
+import { useAdminLocale } from '@/components/AdminLocaleContext'
 
 interface ContactsTabProps {
   contacts: Contact[]
@@ -10,7 +12,8 @@ interface ContactsTabProps {
   loading: boolean
 }
 
-export default function ContactsTab({ contacts, onRefresh, loading }: ContactsTabProps) {
+export default function ContactsTab({ contacts, onRefresh }: ContactsTabProps) {
+  const { locale, t } = useAdminLocale()
   const [selectedContact, setSelectedContact] = useState<Contact | null>(null)
   const [updating, setUpdating] = useState<string | null>(null)
 
@@ -39,7 +42,7 @@ export default function ContactsTab({ contacts, onRefresh, loading }: ContactsTa
   }
 
   const handleDelete = async (id: string) => {
-    if (confirm('Er du sikker på at du vil slette denne henvendelsen?')) {
+    if (confirm(t('confirmDeleteContact'))) {
       setUpdating(id)
       try {
         await deleteContact(id)
@@ -56,7 +59,7 @@ export default function ContactsTab({ contacts, onRefresh, loading }: ContactsTa
   }
 
   const formatDate = (timestamp: number) => {
-    return new Date(timestamp * 1000).toLocaleString('nb-NO', {
+    return new Date(timestamp * 1000).toLocaleString(adminDateLocale(locale), {
       year: 'numeric',
       month: 'long',
       day: 'numeric',
@@ -65,29 +68,26 @@ export default function ContactsTab({ contacts, onRefresh, loading }: ContactsTa
     })
   }
 
-  const unreadCount = contacts.filter(c => !c.read).length
+  const unreadCount = contacts.filter((c) => !c.read).length
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-      {/* Contacts List */}
       <div className="lg:col-span-1">
         <div className="glass-card p-6">
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-xl font-display font-bold text-gray-900">
-              Henvendelser ({contacts.length})
+              {t('contactsHeading')} ({contacts.length})
             </h2>
             {unreadCount > 0 && (
               <span className="bg-red-500 text-white text-xs font-semibold px-2 py-1 rounded-full">
-                {unreadCount} nye
+                {unreadCount} {t('contactsNewBadge')}
               </span>
             )}
           </div>
-          
+
           <div className="space-y-2 max-h-[600px] overflow-y-auto">
             {contacts.length === 0 ? (
-              <p className="text-gray-500 text-sm text-center py-8">
-                Ingen henvendelser
-              </p>
+              <p className="text-gray-500 text-sm text-center py-8">{t('contactsEmpty')}</p>
             ) : (
               contacts.map((contact) => (
                 <div
@@ -97,33 +97,25 @@ export default function ContactsTab({ contacts, onRefresh, loading }: ContactsTa
                     selectedContact?.id === contact.id
                       ? 'bg-primary/10 border-primary'
                       : contact.read
-                      ? 'bg-gray-50 border-gray-200 hover:bg-gray-100'
-                      : 'bg-white border-gray-300 hover:border-primary'
+                        ? 'bg-gray-50 border-gray-200 hover:bg-gray-100'
+                        : 'bg-white border-gray-300 hover:border-primary'
                   }`}
                 >
                   <div className="flex items-start justify-between mb-2">
                     <div className="flex-1">
-                      <div className="font-semibold text-gray-900 mb-1">
-                        {contact.name}
-                      </div>
-                      <div className="text-sm text-gray-600 mb-1">
-                        {contact.email}
-                      </div>
-                      <div className="text-sm font-medium text-gray-700">
-                        {contact.subject}
-                      </div>
+                      <div className="font-semibold text-gray-900 mb-1">{contact.name}</div>
+                      <div className="text-sm text-gray-600 mb-1">{contact.email}</div>
+                      <div className="text-sm font-medium text-gray-700">{contact.subject}</div>
                     </div>
                     {!contact.read && (
                       <Circle size={12} className="text-primary fill-primary mt-1 flex-shrink-0" />
                     )}
                   </div>
-                  <div className="text-xs text-gray-500 mt-2">
-                    {formatDate(contact.created_at)}
-                  </div>
+                  <div className="text-xs text-gray-500 mt-2">{formatDate(contact.created_at)}</div>
                   <div className="flex gap-2 mt-2">
                     {contact.replied && (
                       <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded">
-                        Besvart
+                        {t('contactReplied')}
                       </span>
                     )}
                   </div>
@@ -134,7 +126,6 @@ export default function ContactsTab({ contacts, onRefresh, loading }: ContactsTa
         </div>
       </div>
 
-      {/* Contact Details */}
       <div className="lg:col-span-2">
         {selectedContact ? (
           <div className="glass-card p-6">
@@ -144,9 +135,21 @@ export default function ContactsTab({ contacts, onRefresh, loading }: ContactsTa
                   {selectedContact.subject}
                 </h2>
                 <div className="text-sm text-gray-600">
-                  <div>Navn: {selectedContact.name}</div>
-                  <div>E-post: <a href={`mailto:${selectedContact.email}`} className="text-primary hover:underline">{selectedContact.email}</a></div>
-                  <div>Dato: {formatDate(selectedContact.created_at)}</div>
+                  <div>
+                    {t('contactName')}: {selectedContact.name}
+                  </div>
+                  <div>
+                    {t('contactEmail')}:{' '}
+                    <a
+                      href={`mailto:${selectedContact.email}`}
+                      className="text-primary hover:underline"
+                    >
+                      {selectedContact.email}
+                    </a>
+                  </div>
+                  <div>
+                    {t('contactDate')}: {formatDate(selectedContact.created_at)}
+                  </div>
                 </div>
               </div>
               <div className="flex gap-2">
@@ -155,7 +158,7 @@ export default function ContactsTab({ contacts, onRefresh, loading }: ContactsTa
                     onClick={() => handleMarkRead(selectedContact.id, true)}
                     disabled={updating === selectedContact.id}
                     className="p-2 text-primary hover:bg-primary/10 rounded-lg transition-colors"
-                    title="Merk som lest"
+                    title={t('markRead')}
                   >
                     <CheckCircle size={20} />
                   </button>
@@ -165,7 +168,7 @@ export default function ContactsTab({ contacts, onRefresh, loading }: ContactsTa
                     onClick={() => handleMarkReplied(selectedContact.id, true)}
                     disabled={updating === selectedContact.id}
                     className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
-                    title="Merk som besvart"
+                    title={t('markReplied')}
                   >
                     <Reply size={20} />
                   </button>
@@ -174,7 +177,7 @@ export default function ContactsTab({ contacts, onRefresh, loading }: ContactsTa
                   onClick={() => handleDelete(selectedContact.id)}
                   disabled={updating === selectedContact.id}
                   className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                  title="Slett"
+                  title={t('deleteAction')}
                 >
                   <Trash2 size={20} />
                 </button>
@@ -182,7 +185,7 @@ export default function ContactsTab({ contacts, onRefresh, loading }: ContactsTa
             </div>
 
             <div className="border-t border-gray-200 pt-6">
-              <h3 className="font-semibold text-gray-900 mb-3">Melding:</h3>
+              <h3 className="font-semibold text-gray-900 mb-3">{t('contactMessage')}:</h3>
               <div className="bg-gray-50 rounded-lg p-4 text-gray-700 whitespace-pre-wrap">
                 {selectedContact.message}
               </div>
@@ -194,16 +197,14 @@ export default function ContactsTab({ contacts, onRefresh, loading }: ContactsTa
                 className="btn-primary flex items-center gap-2"
               >
                 <Mail size={18} />
-                Svar på e-post
+                {t('replyByEmail')}
               </a>
             </div>
           </div>
         ) : (
           <div className="glass-card p-12 text-center">
             <Mail size={48} className="text-gray-300 mx-auto mb-4" />
-            <p className="text-gray-600">
-              Velg en henvendelse til venstre for å se detaljene
-            </p>
+            <p className="text-gray-600">{t('contactSelectPrompt')}</p>
           </div>
         )}
       </div>

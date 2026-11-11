@@ -6,10 +6,21 @@ import { Plus, Edit, Trash2, Save, X, Lock, Loader2 } from 'lucide-react'
 import { ElectricityDeal } from '@/lib/mockData'
 import { fetchSuppliers, createSupplier, updateSupplier, deleteSupplier, fetchContacts, Contact, adminLogin, adminLogout, isAdminAuthenticated } from '@/lib/api'
 import ContactsTab from '@/components/ContactsTab'
-import { contractTypeLabel } from '@/lib/adminLabels'
+import { contractTypeDisplayLabel } from '@/lib/adminI18n'
+import { AdminLocaleProvider, useAdminLocale } from '@/components/AdminLocaleContext'
+import AdminLanguageSwitcher from '@/components/AdminLanguageSwitcher'
 
 export default function AdminPage() {
+  return (
+    <AdminLocaleProvider>
+      <AdminPageContent />
+    </AdminLocaleProvider>
+  )
+}
+
+function AdminPageContent() {
   const router = useRouter()
+  const { locale, t } = useAdminLocale()
   const [activeTab, setActiveTab] = useState<'suppliers' | 'contacts'>('suppliers')
   const [deals, setDeals] = useState<ElectricityDeal[]>([])
   const [contacts, setContacts] = useState<Contact[]>([])
@@ -22,7 +33,6 @@ export default function AdminPage() {
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    // Restore session if a valid admin token is already stored
     if (isAdminAuthenticated()) {
       setIsAuthenticated(true)
       loadDeals()
@@ -37,7 +47,7 @@ export default function AdminPage() {
       const loadedDeals = await fetchSuppliers()
       setDeals(loadedDeals)
     } catch (err: any) {
-      setError('Feil ved lasting av strømleverandører: ' + err.message)
+      setError(t('errorLoadSuppliers') + err.message)
       console.error(err)
     } finally {
       setLoading(false)
@@ -64,7 +74,7 @@ export default function AdminPage() {
         loadDeals()
         loadContacts()
       } else {
-        alert('Feil passord')
+        alert(t('wrongPassword'))
       }
     } finally {
       setLoading(false)
@@ -84,14 +94,14 @@ export default function AdminPage() {
   }
 
   const handleDelete = async (id: string) => {
-    if (confirm('Er du sikker på at du vil slette denne strømleverandøren?')) {
+    if (confirm(t('confirmDeleteSupplier'))) {
       setLoading(true)
       setError(null)
       try {
         await deleteSupplier(id)
         await loadDeals()
       } catch (err: any) {
-        setError('Feil ved sletting: ' + err.message)
+        setError(t('errorDelete') + err.message)
         console.error(err)
       } finally {
         setLoading(false)
@@ -103,20 +113,20 @@ export default function AdminPage() {
     e.preventDefault()
     setLoading(true)
     setError(null)
-    
+
     try {
       if (editingId) {
         await updateSupplier(editingId, formData as Partial<ElectricityDeal>)
       } else {
         await createSupplier(formData as Omit<ElectricityDeal, 'id'>)
       }
-      
+
       setEditingId(null)
       setIsAdding(false)
       setFormData({})
       await loadDeals()
     } catch (err: any) {
-      setError('Feil ved lagring: ' + err.message)
+      setError(t('errorSave') + err.message)
       console.error(err)
     } finally {
       setLoading(false)
@@ -149,17 +159,20 @@ export default function AdminPage() {
   if (!isAuthenticated) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
-        <div className="glass-card p-8 max-w-md w-full">
+        <div className="glass-card p-8 max-w-md w-full relative">
+          <div className="absolute top-4 right-4">
+            <AdminLanguageSwitcher />
+          </div>
           <div className="flex items-center justify-center mb-6">
             <Lock size={48} className="text-primary" />
           </div>
           <h1 className="text-2xl font-display font-bold text-gray-900 mb-6 text-center">
-            Admin-innlogging
+            {t('loginTitle')}
           </h1>
           <form onSubmit={handleLogin} className="space-y-4">
             <div>
               <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
-                Passord
+                {t('passwordLabel')}
               </label>
               <input
                 type="password"
@@ -168,11 +181,11 @@ export default function AdminPage() {
                 onChange={(e) => setPassword(e.target.value)}
                 className="input-field"
                 required
-                placeholder="Skriv inn passord"
+                placeholder={t('passwordPlaceholder')}
               />
             </div>
             <button type="submit" className="btn-primary w-full" disabled={loading}>
-              {loading ? 'Logger inn …' : 'Logg inn'}
+              {loading ? t('loginSubmitting') : t('loginSubmit')}
             </button>
           </form>
           <div className="mt-4 text-center">
@@ -180,7 +193,7 @@ export default function AdminPage() {
               onClick={() => router.push('/')}
               className="text-sm text-gray-600 hover:text-primary"
             >
-              Tilbake til forsiden
+              {t('backToHome')}
             </button>
           </div>
         </div>
@@ -191,35 +204,30 @@ export default function AdminPage() {
   return (
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center mb-8">
+        <div className="flex justify-between items-center mb-8 gap-4 flex-wrap">
           <div>
             <h1 className="text-3xl md:text-4xl font-display font-bold text-gray-900 mb-2">
-              Adminpanel
+              {t('panelTitle')}
             </h1>
-            <p className="text-gray-600">
-              Administrer strømleverandører og henvendelser
-            </p>
+            <p className="text-gray-600">{t('panelSubtitle')}</p>
           </div>
-          <div className="flex gap-4">
+          <div className="flex gap-4 items-center flex-wrap">
+            <AdminLanguageSwitcher />
             {activeTab === 'suppliers' && (
-              <button
-                onClick={handleAddNew}
-                className="btn-primary flex items-center gap-2"
-              >
+              <button onClick={handleAddNew} className="btn-primary flex items-center gap-2">
                 <Plus size={20} />
-                Legg til ny
+                {t('addNew')}
               </button>
             )}
             <button
               onClick={handleLogout}
               className="px-4 py-2 border border-gray-300 rounded-xl text-gray-700 hover:bg-gray-50 transition-colors"
             >
-              Logg ut
+              {t('logout')}
             </button>
           </div>
         </div>
 
-        {/* Tabs */}
         <div className="flex gap-4 mb-6 border-b border-gray-200">
           <button
             onClick={() => setActiveTab('suppliers')}
@@ -229,7 +237,7 @@ export default function AdminPage() {
                 : 'border-transparent text-gray-600 hover:text-gray-900'
             }`}
           >
-            Strømleverandører ({deals.length})
+            {t('tabSuppliers')} ({deals.length})
           </button>
           <button
             onClick={() => setActiveTab('contacts')}
@@ -239,10 +247,10 @@ export default function AdminPage() {
                 : 'border-transparent text-gray-600 hover:text-gray-900'
             }`}
           >
-            Henvendelser ({contacts.length})
-            {contacts.filter(c => !c.read).length > 0 && (
+            {t('tabContacts')} ({contacts.length})
+            {contacts.filter((c) => !c.read).length > 0 && (
               <span className="absolute top-1 right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                {contacts.filter(c => !c.read).length}
+                {contacts.filter((c) => !c.read).length}
               </span>
             )}
           </button>
@@ -251,13 +259,13 @@ export default function AdminPage() {
         {activeTab === 'suppliers' && (isAdding || editingId) && (
           <div className="glass-card p-6 mb-6">
             <h2 className="text-xl font-display font-bold text-gray-900 mb-4">
-              {editingId ? 'Rediger strømleverandør' : 'Legg til ny strømleverandør'}
+              {editingId ? t('editSupplierTitle') : t('addSupplierTitle')}
             </h2>
             <form onSubmit={handleSave} className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Strømleverandør *
+                    {t('labelSupplier')} *
                   </label>
                   <input
                     type="text"
@@ -267,10 +275,10 @@ export default function AdminPage() {
                     required
                   />
                 </div>
-                
+
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Pris (øre/kWh) *
+                    {t('labelPrice')} *
                   </label>
                   <input
                     type="number"
@@ -288,10 +296,10 @@ export default function AdminPage() {
                     placeholder="6.99"
                   />
                 </div>
-                
+
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Grunnavgift (€/mnd) *
+                    {t('labelMonthlyFee')} *
                   </label>
                   <input
                     type="number"
@@ -309,10 +317,10 @@ export default function AdminPage() {
                     placeholder="3.90"
                   />
                 </div>
-                
+
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Avtaletype *
+                    {t('labelContractType')} *
                   </label>
                   <select
                     value={formData.type || 'Kiinteä'}
@@ -320,14 +328,14 @@ export default function AdminPage() {
                     className="input-field"
                     required
                   >
-                    <option value="Kiinteä">Fastpris</option>
-                    <option value="Pörssisähkö">Spotpris</option>
+                    <option value="Kiinteä">{t('contractTypeKiinteä')}</option>
+                    <option value="Pörssisähkö">{t('contractTypePörssisähkö')}</option>
                   </select>
                 </div>
-                
+
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Varighet *
+                    {t('labelDuration')} *
                   </label>
                   <input
                     type="text"
@@ -338,10 +346,10 @@ export default function AdminPage() {
                     placeholder="12 kk"
                   />
                 </div>
-                
+
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Spareestimat (€/år) *
+                    {t('labelSavings')} *
                   </label>
                   <input
                     type="number"
@@ -359,10 +367,10 @@ export default function AdminPage() {
                     placeholder="250"
                   />
                 </div>
-                
+
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Vurdering (1–5) *
+                    {t('labelRating')} *
                   </label>
                   <input
                     type="number"
@@ -375,10 +383,10 @@ export default function AdminPage() {
                     required
                   />
                 </div>
-                
+
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Affiliate-lenke *
+                    {t('labelAffiliate')} *
                   </label>
                   <input
                     type="url"
@@ -389,7 +397,7 @@ export default function AdminPage() {
                     placeholder="https://..."
                   />
                 </div>
-                
+
                 <div className="md:col-span-2">
                   <label className="flex items-center gap-2">
                     <input
@@ -398,9 +406,7 @@ export default function AdminPage() {
                       onChange={(e) => setFormData({ ...formData, renewable: e.target.checked })}
                       className="w-4 h-4 text-primary border-gray-300 rounded focus:ring-primary"
                     />
-                    <span className="text-sm font-medium text-gray-700">
-                      Fornybar energi
-                    </span>
+                    <span className="text-sm font-medium text-gray-700">{t('labelRenewable')}</span>
                   </label>
                 </div>
 
@@ -417,17 +423,15 @@ export default function AdminPage() {
                       }
                       className="w-4 h-4 text-primary border-gray-300 rounded focus:ring-primary"
                     />
-                    <span className="text-sm font-medium text-gray-700">
-                      Vis på forsiden i listen «Mest populære»
-                    </span>
+                    <span className="text-sm font-medium text-gray-700">{t('labelShowOnFrontpage')}</span>
                   </label>
                 </div>
               </div>
-              
+
               <div className="flex gap-4">
                 <button type="submit" className="btn-primary flex items-center gap-2">
                   <Save size={20} />
-                  Lagre
+                  {t('save')}
                 </button>
                 <button
                   type="button"
@@ -435,7 +439,7 @@ export default function AdminPage() {
                   className="px-4 py-2 border border-gray-300 rounded-xl text-gray-700 hover:bg-gray-50 transition-colors flex items-center gap-2"
                 >
                   <X size={20} />
-                  Avbryt
+                  {t('cancel')}
                 </button>
               </div>
             </form>
@@ -446,21 +450,21 @@ export default function AdminPage() {
           <div className="glass-card p-6">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-xl font-display font-bold text-gray-900">
-                Strømleverandører ({deals.length})
+                {t('suppliersHeading')} ({deals.length})
               </h2>
               {loading && <Loader2 className="animate-spin text-primary" size={20} />}
             </div>
-            
+
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
                   <tr className="border-b border-gray-200">
-                    <th className="text-left py-3 px-4 font-semibold text-gray-700">Strømleverandør</th>
-                    <th className="text-left py-3 px-4 font-semibold text-gray-700">Pris</th>
-                    <th className="text-left py-3 px-4 font-semibold text-gray-700">Type</th>
-                    <th className="text-left py-3 px-4 font-semibold text-gray-700">Vurdering</th>
-                    <th className="text-left py-3 px-4 font-semibold text-gray-700">Forside</th>
-                    <th className="text-right py-3 px-4 font-semibold text-gray-700">Handlinger</th>
+                    <th className="text-left py-3 px-4 font-semibold text-gray-700">{t('thSupplier')}</th>
+                    <th className="text-left py-3 px-4 font-semibold text-gray-700">{t('thPrice')}</th>
+                    <th className="text-left py-3 px-4 font-semibold text-gray-700">{t('thType')}</th>
+                    <th className="text-left py-3 px-4 font-semibold text-gray-700">{t('thRating')}</th>
+                    <th className="text-left py-3 px-4 font-semibold text-gray-700">{t('thFrontpage')}</th>
+                    <th className="text-right py-3 px-4 font-semibold text-gray-700">{t('thActions')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -469,11 +473,13 @@ export default function AdminPage() {
                       <td className="py-3 px-4">
                         <div className="font-medium text-gray-900">{deal.supplier}</div>
                         {deal.renewable && (
-                          <span className="text-xs text-primary">Fornybar</span>
+                          <span className="text-xs text-primary">{t('renewableBadge')}</span>
                         )}
                       </td>
                       <td className="py-3 px-4 text-gray-700">{deal.basePrice}</td>
-                      <td className="py-3 px-4 text-gray-700">{contractTypeLabel(deal.type)}</td>
+                      <td className="py-3 px-4 text-gray-700">
+                        {contractTypeDisplayLabel(locale, deal.type)}
+                      </td>
                       <td className="py-3 px-4">
                         <span className="text-sm font-medium">⭐ {deal.rating}</span>
                       </td>
@@ -485,7 +491,7 @@ export default function AdminPage() {
                               : 'bg-gray-100 text-gray-600'
                           }`}
                         >
-                          {deal.showOnFrontpage !== false ? 'Synlig' : 'Skjult'}
+                          {deal.showOnFrontpage !== false ? t('frontpageVisible') : t('frontpageHidden')}
                         </span>
                       </td>
                       <td className="py-3 px-4">
@@ -493,14 +499,14 @@ export default function AdminPage() {
                           <button
                             onClick={() => handleEdit(deal)}
                             className="p-2 text-primary hover:bg-primary/10 rounded-lg transition-colors"
-                            title="Rediger"
+                            title={t('editAction')}
                           >
                             <Edit size={18} />
                           </button>
                           <button
                             onClick={() => handleDelete(deal.id)}
                             className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                            title="Slett"
+                            title={t('deleteAction')}
                           >
                             <Trash2 size={18} />
                           </button>
@@ -515,11 +521,7 @@ export default function AdminPage() {
         )}
 
         {activeTab === 'contacts' && (
-          <ContactsTab 
-            contacts={contacts} 
-            onRefresh={loadContacts}
-            loading={loading}
-          />
+          <ContactsTab contacts={contacts} onRefresh={loadContacts} loading={loading} />
         )}
 
         {error && (
